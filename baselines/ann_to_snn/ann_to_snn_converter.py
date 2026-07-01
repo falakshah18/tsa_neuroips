@@ -213,9 +213,6 @@ class ConvertedSNN(nn.Module):
 
         return out, metrics
 
-    def reset(self):
-        functional.reset_net(self)
-
 
 # ─────────────────────────────────────────────
 # STEP 3: Converter

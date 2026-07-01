@@ -422,10 +422,20 @@ class BaselineComparison:
             }
             bio = bio_scores.get(algorithm, {})
 
-        total = sum(1 for v in bio.values() if v)
-        bio['total_score'] = total
+        # Config YAMLs may already embed a precomputed 'total_score' alongside
+        # the boolean criteria; exclude it so we don't double-count it as a
+        # truthy criterion when summing.
+        criteria = {k: v for k, v in bio.items() if k != 'total_score'}
 
-        return bio
+        total = sum(1 for v in criteria.values() if v)
+        result = {
+            'criteria': criteria,
+            'total_score': total,
+        }
+        # Keep flat boolean keys too for any callers that expect them directly.
+        result.update(bio)
+
+        return result
 
     def run(self) -> Dict:
         """Run the full baseline comparison."""

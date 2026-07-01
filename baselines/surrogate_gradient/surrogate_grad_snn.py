@@ -105,9 +105,6 @@ class SurrogateGradSNN(nn.Module):
 
         return out, metrics
 
-    def reset(self):
-        functional.reset_net(self)
-
 
 class SurrogateGradSNN_SHD(nn.Module):
     """
@@ -179,9 +176,6 @@ class SurrogateGradSNN_SHD(nn.Module):
         }
 
         return out, metrics
-
-    def reset(self):
-        functional.reset_net(self)
 
 
 def get_surrogate_grad_model(dataset: str, config: dict) -> nn.Module:

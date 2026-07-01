@@ -27,6 +27,8 @@ class LearnableTSA(nn.Module):
         proj_drop: float = 0.0,
         init_tau: float = 2.0,
         init_threshold: float = 1.0,
+        learnable_tau: bool = True,
+        learnable_threshold: bool = True,
     ):
         super().__init__()
         assert dim % num_heads == 0
@@ -41,8 +43,8 @@ class LearnableTSA(nn.Module):
         self.k_neuron = neuron.ParametricLIFNode(init_tau=init_tau, surrogate_function=surrogate.ATan(), detach_reset=True)
         self.v_neuron = neuron.ParametricLIFNode(init_tau=init_tau, surrogate_function=surrogate.ATan(), detach_reset=True)
         
-        self.attn_tau = nn.Parameter(torch.ones(num_heads) * init_tau)
-        self.attn_threshold = nn.Parameter(torch.ones(num_heads) * init_threshold)
+        self.attn_tau = nn.Parameter(torch.ones(num_heads) * init_tau, requires_grad=learnable_tau)
+        self.attn_threshold = nn.Parameter(torch.ones(num_heads) * init_threshold, requires_grad=learnable_threshold)
         self.temperature = nn.Parameter(torch.ones(num_heads))
         
         self.attn_drop = nn.Dropout(attn_drop)
@@ -102,10 +104,12 @@ class LearnableTSA(nn.Module):
 
 
 class TSABlock(nn.Module):
-    def __init__(self, dim, num_heads, mlp_ratio=4.0, qkv_bias=True, drop=0.0, attn_drop=0.0, init_tau=2.0):
+    def __init__(self, dim, num_heads, mlp_ratio=4.0, qkv_bias=True, drop=0.0, attn_drop=0.0, init_tau=2.0,
+                 learnable_tau=True, learnable_threshold=True):
         super().__init__()
         self.norm1 = nn.LayerNorm(dim)
-        self.attn = LearnableTSA(dim, num_heads, qkv_bias, attn_drop, drop, init_tau)
+        self.attn = LearnableTSA(dim, num_heads, qkv_bias, attn_drop, drop, init_tau,
+                                  learnable_tau=learnable_tau, learnable_threshold=learnable_threshold)
         self.norm2 = nn.LayerNorm(dim)
         mlp_hidden = int(dim * mlp_ratio)
         self.mlp = nn.Sequential(
@@ -139,6 +143,8 @@ class TemporalSpikingTransformer(nn.Module):
         drop_rate=0.0,
         attn_drop_rate=0.0,
         init_tau=2.0,
+        learnable_tau=True,
+        learnable_threshold=True,
     ):
         super().__init__()
         self.num_classes = num_classes
@@ -157,7 +163,8 @@ class TemporalSpikingTransformer(nn.Module):
         self.pos_drop = nn.Dropout(drop_rate)
         
         self.blocks = nn.ModuleList([
-            TSABlock(embed_dim, num_heads, mlp_ratio, qkv_bias, drop_rate, attn_drop_rate, init_tau)
+            TSABlock(embed_dim, num_heads, mlp_ratio, qkv_bias, drop_rate, attn_drop_rate, init_tau,
+                     learnable_tau=learnable_tau, learnable_threshold=learnable_threshold)
             for _ in range(depth)
         ])
         
@@ -198,7 +205,13 @@ class TemporalSpikingTransformer(nn.Module):
             attn = block.get('attention', {})
             total_spikes += attn.get('total_spikes', 0)
         
+        # Energy constant: 0.1 pJ per spike (consistent with training/trainer_v2.py).
+        energy_per_spike_j = 0.1e-12
+        total_energy_j = total_spikes * energy_per_spike_j
+        batch_size = x.shape[1]
+
         return {
             'total_spikes': total_spikes,
-            'energy_per_sample_uJ': total_spikes * 0.1,
+            'total_energy_J': total_energy_j,
+            'energy_per_sample_uJ': (total_energy_j / max(batch_size, 1)) * 1e6,
         }

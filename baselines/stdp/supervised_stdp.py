@@ -338,13 +338,6 @@ class SupervisedSTDP(nn.Module):
         self.layer2.stdp_update(error=None, lr=self.stdp_lr)   # unsupervised for deeper layers
         self.layer1.stdp_update(error=None, lr=self.stdp_lr)
 
-    def reset(self):
-        functional.reset_net(self)
-        # Also reset custom layers
-        for layer in [self.layer1, self.layer2, self.layer3]:
-            if hasattr(layer, 'reset'):
-                layer.reset()
-    
 
 
 class SupervisedSTDP_Vision(nn.Module):
@@ -453,9 +446,6 @@ class SupervisedSTDP_Vision(nn.Module):
         }
 
         return logits, metrics
-
-    def reset(self):
-        functional.reset_net(self)
 
 
 def get_stdp_model(dataset: str, config: dict) -> nn.Module:

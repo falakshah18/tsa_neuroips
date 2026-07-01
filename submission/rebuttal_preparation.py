@@ -151,4 +151,27 @@ We provide multiple reproducibility mechanisms:
    ```bash
    docker run -it tst:latest
    python verify_results.py --dataset nmnist
-   # Outputs: Accuracy: 96.8 ± 0.3% (matches Table 1)
+   # Outputs: Accuracy: 96.8 +/- 0.3% (matches Table 1)
+   ```
+
+3. **De-anonymization on acceptance**: Full code, trained checkpoints, and experiment logs
+   will be released on a public GitHub repository under an open-source license upon
+   acceptance, with a permanent DOI via Zenodo.
+
+We are committed to full reproducibility and welcome any specific verification requests
+during the discussion period.
+        """
+        return response
+
+    @staticmethod
+    def get_all_responses():
+        """
+        Return all prepared rebuttal responses as a dict keyed by concern.
+        """
+        return {
+            "novelty": RebuttalPreparation.concern_1_novelty(),
+            "hardware": RebuttalPreparation.concern_2_hardware(),
+            "complexity": RebuttalPreparation.concern_3_complexity(),
+            "limited_scope": RebuttalPreparation.concern_4_limited_scope(),
+            "reproducibility": RebuttalPreparation.concern_5_reproducibility(),
+        }

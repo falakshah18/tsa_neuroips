@@ -493,7 +493,7 @@ class EpropSNN_Vision(nn.Module):
     def reset(self):
         self.eprop1.reset()
         self.eprop2.reset()
-        functional.reset_net(self)
+        functional.reset_net(self.features)
 
     def forward(
         self,
