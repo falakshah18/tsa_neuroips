@@ -321,99 +321,114 @@ def run_training(
         train_config = config.get('training', {})
 
         # Get data loaders
-        train_loader, val_loader, test_loader = get_loaders(
-            dataset, ds_config
-        )
+        try:
+            train_loader, val_loader, test_loader = get_loaders(
+                dataset, ds_config
+            )
+        except Exception as e:
+            print(f"  ⚠️  Could not load dataset '{dataset}': {e}")
+            all_results[dataset].append({'error': str(e)})
+            continue
 
         for seed in range(n_seeds):
             print(f"\n  Seed {seed + 1}/{n_seeds}")
 
-            # Set seeds
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed_all(seed)
+            try:
+                # Set seeds
+                torch.manual_seed(seed)
+                np.random.seed(seed)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(seed)
 
-            # Create model
-            model = get_tsa_model(dataset, config)
+                # Create model
+                model = get_tsa_model(dataset, config)
 
-            # Load checkpoint if provided
-            if load_checkpoint:
-                ckpt = torch.load(load_checkpoint)
-                model.load_state_dict(ckpt['model_state_dict'])
-                print(f"  Loaded checkpoint: {load_checkpoint}")
+                # Load checkpoint if provided
+                if load_checkpoint:
+                    ckpt = torch.load(load_checkpoint)
+                    model.load_state_dict(ckpt['model_state_dict'])
+                    print(f"  Loaded checkpoint: {load_checkpoint}")
 
-            # Training config
-            training_config = {
-                'project_name': 'TSA_NEUROIPS',
-                'run_name': f'TSA_{dataset}_seed{seed}',
-                'epochs': epochs,
-                'lr': train_config.get('lr', 1e-3),
-                'weight_decay': train_config.get('weight_decay', 0.05),
-                'warmup_epochs': train_config.get('warmup_epochs', 10),
-                'patience': train_config.get('patience', 30),
-                'mixed_precision': train_config.get('mixed_precision', True),
-                'gradient_accumulation_steps': train_config.get(
-                    'gradient_accumulation_steps', 1
-                ),
-                'spike_reg': train_config.get('spike_reg', 0.001),
-                'log_dir': f'./logs/tsa/{dataset}/seed{seed}',
-                'checkpoint_dir': f'./checkpoints/tsa/{dataset}/seed{seed}',
-            }
+                # Training config
+                training_config = {
+                    'project_name': 'TSA_NEUROIPS',
+                    'run_name': f'TSA_{dataset}_seed{seed}',
+                    'epochs': epochs,
+                    'lr': train_config.get('lr', 1e-3),
+                    'weight_decay': train_config.get('weight_decay', 0.05),
+                    'warmup_epochs': train_config.get('warmup_epochs', 10),
+                    'patience': train_config.get('patience', 30),
+                    'mixed_precision': train_config.get('mixed_precision', True),
+                    'gradient_accumulation_steps': train_config.get(
+                        'gradient_accumulation_steps', 1
+                    ),
+                    'spike_reg': train_config.get('spike_reg', 0.001),
+                    'log_dir': f'./logs/tsa/{dataset}/seed{seed}',
+                    'checkpoint_dir': f'./checkpoints/tsa/{dataset}/seed{seed}',
+                }
 
-            Path(training_config['checkpoint_dir']).mkdir(
-                parents=True, exist_ok=True
-            )
-            Path(training_config['log_dir']).mkdir(
-                parents=True, exist_ok=True
-            )
+                Path(training_config['checkpoint_dir']).mkdir(
+                    parents=True, exist_ok=True
+                )
+                Path(training_config['log_dir']).mkdir(
+                    parents=True, exist_ok=True
+                )
 
-            # Train
-            trainer = AdvancedTrainer(
-                model=model,
-                train_loader=train_loader,
-                val_loader=val_loader,
-                test_loader=test_loader,
-                config=training_config,
-                device=device,
-                use_wandb=False,
-            )
+                # Train
+                trainer = AdvancedTrainer(
+                    model=model,
+                    train_loader=train_loader,
+                    val_loader=val_loader,
+                    test_loader=test_loader,
+                    config=training_config,
+                    device=device,
+                    use_wandb=False,
+                )
 
-            metrics = trainer.train()
+                metrics = trainer.train()
 
-            all_results[dataset].append({
-                'seed': seed,
-                'test_acc': metrics['test_metrics']['acc'],
-                'test_energy': metrics['test_metrics'].get(
-                    'avg_energy_uJ', 0.0
-                ),
-                'best_val_acc': metrics['best_val_acc'],
-            })
+                all_results[dataset].append({
+                    'seed': seed,
+                    'test_acc': metrics['test_metrics']['acc'],
+                    'test_energy': metrics['test_metrics'].get(
+                        'avg_energy_uJ', 0.0
+                    ),
+                    'best_val_acc': metrics['best_val_acc'],
+                })
 
-            print(
-                f"  Seed {seed}: "
-                f"acc={metrics['test_metrics']['acc']:.4f}, "
-                f"energy={metrics['test_metrics'].get('avg_energy_uJ', 0):.4f}uJ"
-            )
+                print(
+                    f"  Seed {seed}: "
+                    f"acc={metrics['test_metrics']['acc']:.4f}, "
+                    f"energy={metrics['test_metrics'].get('avg_energy_uJ', 0):.4f}uJ"
+                )
 
-            # Save pretrained model
-            pretrained_path = (
-                Path('./pretrained_models') /
-                f'tsa_{dataset}_seed{seed}.pth'
-            )
-            pretrained_path.parent.mkdir(parents=True, exist_ok=True)
-            torch.save(
-                model.state_dict(),
-                pretrained_path
-            )
+                # Save pretrained model
+                pretrained_path = (
+                    Path('./pretrained_models') /
+                    f'tsa_{dataset}_seed{seed}.pth'
+                )
+                pretrained_path.parent.mkdir(parents=True, exist_ok=True)
+                torch.save(
+                    model.state_dict(),
+                    pretrained_path
+                )
+            except Exception as e:
+                print(f"  ⚠️  Seed {seed} failed: {e}")
+                all_results[dataset].append({'seed': seed, 'error': str(e)})
 
         # Print dataset summary
-        accs = [r['test_acc'] for r in all_results[dataset]]
-        print(
-            f"\n  {dataset.upper()} Summary: "
-            f"{np.mean(accs)*100:.2f} ± "
-            f"{np.std(accs)*100:.2f}%"
-        )
+        accs = [
+            r['test_acc'] for r in all_results[dataset]
+            if 'test_acc' in r
+        ]
+        if accs:
+            print(
+                f"\n  {dataset.upper()} Summary: "
+                f"{np.mean(accs)*100:.2f} ± "
+                f"{np.std(accs)*100:.2f}%"
+            )
+        else:
+            print(f"\n  {dataset.upper()} Summary: no successful runs")
 
     # Save results
     with open(save_dir / 'tsa_training_results.json', 'w') as f:
@@ -442,9 +457,13 @@ def run_ablations(
 
     # Use N-MNIST for ablations (faster)
     ds_config = config.get('nmnist', {})
-    train_loader, val_loader, test_loader = get_loaders(
-        'nmnist', ds_config
-    )
+    try:
+        train_loader, val_loader, test_loader = get_loaders(
+            'nmnist', ds_config
+        )
+    except Exception as e:
+        print(f"  ⚠️  Could not load dataset 'nmnist': {e}")
+        return {'error': str(e)}
 
     # Base config for ablations
     base_config = {
@@ -511,7 +530,12 @@ def run_hardware_validation(
         print(f"\nDataset: {dataset.upper()}")
 
         ds_config = config.get(dataset, {})
-        _, _, test_loader = get_loaders(dataset, ds_config)
+        try:
+            _, _, test_loader = get_loaders(dataset, ds_config)
+        except Exception as e:
+            print(f"  ⚠️  Could not load dataset '{dataset}': {e}")
+            hardware_results[dataset] = {'error': str(e)}
+            continue
 
         # Load best pretrained model if exists
         pretrained_path = (
@@ -593,7 +617,7 @@ def run_statistical_validation(
     for dataset in training_results.keys():
         print(f"\nDataset: {dataset.upper()}")
 
-        # Format TSA results
+        # Format TSA results (skip seeds that failed)
         tsa_results = [
             {
                 'test_acc': r['test_acc'],
@@ -601,7 +625,12 @@ def run_statistical_validation(
                 'test_spikes': 0,
             }
             for r in training_results[dataset]
+            if 'error' not in r
         ]
+
+        if not tsa_results:
+            print("  No successful TSA runs for this dataset")
+            continue
 
         # Collect all method results
         all_methods = {'TSA_Ours': tsa_results}
@@ -658,8 +687,13 @@ def print_tsa_summary(results: Dict):
         if not isinstance(seed_results, list):
             continue
 
-        accs = [r['test_acc'] for r in seed_results]
-        energies = [r.get('test_energy', 0) for r in seed_results]
+        valid = [r for r in seed_results if 'error' not in r]
+        if not valid:
+            print(f"\n{dataset.upper()}: no successful runs")
+            continue
+
+        accs = [r['test_acc'] for r in valid]
+        energies = [r.get('test_energy', 0) for r in valid]
 
         print(f"\n{dataset.upper()}:")
         print(f"  Accuracy: {np.mean(accs)*100:.2f} ± {np.std(accs)*100:.2f}%")
