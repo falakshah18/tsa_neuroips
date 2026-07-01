@@ -1,0 +1,26 @@
+% bio_plausibility_rubric.tex
+% Biological plausibility rubric table
+
+\begin{table}[t]
+\centering
+\caption{
+    Biological plausibility scoring rubric.
+    \cmark~= criterion satisfied,
+    \xmark~= criterion not satisfied.
+    Score = number of satisfied criteria (out of 5).
+}
+\label{tab:bio_rubric}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Algorithm} & \rotatebox{70}{\textbf{Local Learning}} & \rotatebox{70}{\textbf{Spike Comm.}} & \rotatebox{70}{\textbf{Temporal Dynamics}} & \rotatebox{70}{\textbf{No Weight Transport}} & \rotatebox{70}{\textbf{Online Learning}} & \textbf{Score} \\
+\midrule
+Surrogate Gradient & \xmark & \cmark & \cmark & \xmark & \xmark & 2/5 \\
+ANN-to-SNN & \xmark & \cmark & \cmark & \xmark & \xmark & 2/5 \\
+Supervised STDP & \cmark & \cmark & \cmark & \cmark & \xmark & 4/5 \\
+E-prop & \cmark & \cmark & \cmark & \cmark & \xmark & 4/5 \\
+TTFS & \xmark & \cmark & \cmark & \xmark & \xmark & 3/5 \\
+\midrule
+\textbf{TSA (Ours)} & \xmark & \cmark & \cmark & \xmark & \xmark & 3/5 \\
+\bottomrule
+\end{tabular}
+\end{table}

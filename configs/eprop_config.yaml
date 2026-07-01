@@ -1,0 +1,68 @@
+# configs/eprop_config.yaml
+# E-prop Configuration
+
+algorithm: eprop
+description: "Eligibility propagation - online SNN learning"
+
+# E-prop parameters
+eprop:
+  tau_e: 20.0            # eligibility trace decay (ms)
+  eprop_lr: 0.001        # e-prop learning rate
+  feedback: random       # random feedback alignment
+  symmetric: false       # symmetric e-prop variant
+
+# Model
+model:
+  hidden_size: 256
+  tau: 10.0              # membrane time constant
+  num_layers: 3
+
+# Dataset specific
+nmnist:
+  img_size: 34
+  in_channels: 2
+  num_classes: 10
+  T: 20
+  batch_size: 32
+  n_time_bins: 20
+
+shd:
+  input_size: 700
+  num_classes: 20
+  T: 100
+  batch_size: 32
+  n_time_bins: 100
+
+# Training
+training:
+  epochs: 100
+  lr: 0.001              # for head
+  weight_decay: 0.0
+  warmup_epochs: 5
+  patience: 20
+  mixed_precision: false
+  gradient_accumulation_steps: 1
+  optimizer: adam
+  scheduler: cosine
+  label_smoothing: 0.0
+  grad_clip: 1.0
+
+# Regularization
+regularization:
+  dropout: 0.3
+
+# Logging
+logging:
+  use_wandb: false
+  log_dir: ./logs/eprop
+  checkpoint_dir: ./checkpoints/eprop
+  save_every: 10
+
+# Biological plausibility
+bio_plausibility:
+  local_learning_rule: true
+  spike_based_communication: true
+  temporal_dynamics: true
+  no_weight_transport: true
+  online_learning: false   # batched here
+  total_score: 4

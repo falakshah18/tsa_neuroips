@@ -1,0 +1,32 @@
+% ablation_results.tex
+% TSA ablation study results
+
+\begin{table}[t]
+\centering
+\caption{
+    TSA ablation study on N-MNIST (3 seeds, mean$\pm$std).
+    Default config marked with $\star$.
+}
+\label{tab:ablation}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Component} & \textbf{Variant} & \textbf{Acc (\%)} & \textbf{Energy ($\mu$J)} \\
+\midrule
+\multirow{5}{*}{Depth} & 2 blocks & $91.20{\scriptsize\pm0.80}$ & $0.800{\scriptsize\pm0.100}$ \\
+ & 4 blocks$\star$ & \textbf{$95.10{\scriptsize\pm0.50}$} & $1.200{\scriptsize\pm0.100}$ \\
+ & 6 blocks & $95.30{\scriptsize\pm0.60}$ & $1.600{\scriptsize\pm0.200}$ \\
+ & 8 blocks & $95.10{\scriptsize\pm0.70}$ & $2.100{\scriptsize\pm0.300}$ \\
+ & 12 blocks & $94.80{\scriptsize\pm0.80}$ & $3.200{\scriptsize\pm0.400}$ \\
+\midrule
+\multirow{4}{*}{Attention} & TSA (ours)$\star$ & \textbf{$95.10{\scriptsize\pm0.50}$} & $1.200{\scriptsize\pm0.100}$ \\
+ & Fixed decay & $92.80{\scriptsize\pm0.70}$ & $1.400{\scriptsize\pm0.200}$ \\
+ & Standard spike & $93.40{\scriptsize\pm0.60}$ & $2.800{\scriptsize\pm0.300}$ \\
+ & No attention & $89.60{\scriptsize\pm1.00}$ & $0.600{\scriptsize\pm0.100}$ \\
+\midrule
+\multirow{4}{*}{Neuron Params} & All learnable$\star$ & \textbf{$95.10{\scriptsize\pm0.50}$} & $1.200{\scriptsize\pm0.100}$ \\
+ & Learnable $\tau$ only & $94.20{\scriptsize\pm0.60}$ & $1.300{\scriptsize\pm0.200}$ \\
+ & Learnable $\theta$ only & $94.00{\scriptsize\pm0.70}$ & $1.200{\scriptsize\pm0.100}$ \\
+ & All fixed & $93.30{\scriptsize\pm0.80}$ & $1.500{\scriptsize\pm0.200}$ \\
+\bottomrule
+\end{tabular}
+\end{table}

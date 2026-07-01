@@ -1,0 +1,69 @@
+# configs/ttfs_config.yaml
+# TTFS Temporal Coding Configuration
+
+algorithm: ttfs
+description: "Time-To-First-Spike temporal coding SNN"
+
+# TTFS parameters
+ttfs:
+  T_encode: 20           # encoding timesteps
+  inhibit_after_spike: true  # enforce one-spike constraint
+  decode_method: spike_time  # how to decode output
+
+# Model
+model:
+  hidden_size: 256
+  tau: 2.0
+  threshold: 1.0
+
+# Dataset specific
+nmnist:
+  img_size: 34
+  in_channels: 2
+  num_classes: 10
+  T: 20
+  T_encode: 20
+  batch_size: 32
+  n_time_bins: 20
+
+shd:
+  input_size: 700
+  num_classes: 20
+  T: 100
+  T_encode: 20
+  batch_size: 32
+  n_time_bins: 100
+
+# Training
+training:
+  epochs: 100
+  lr: 0.001
+  weight_decay: 0.01
+  warmup_epochs: 10
+  patience: 20
+  mixed_precision: true
+  gradient_accumulation_steps: 1
+  optimizer: adamw
+  scheduler: cosine
+  label_smoothing: 0.1
+  grad_clip: 1.0
+
+# Regularization
+regularization:
+  dropout: 0.3
+
+# Logging
+logging:
+  use_wandb: false
+  log_dir: ./logs/ttfs
+  checkpoint_dir: ./checkpoints/ttfs
+  save_every: 10
+
+# Biological plausibility
+bio_plausibility:
+  local_learning_rule: false
+  spike_based_communication: true
+  temporal_dynamics: true
+  no_weight_transport: false
+  online_learning: false
+  total_score: 3

@@ -1,0 +1,80 @@
+# configs/tsa_config.yaml
+# TSA (Ours) Configuration
+
+algorithm: tsa
+description: "Temporal Spiking Attention - Novel Architecture"
+
+# TSA model
+model:
+  embed_dim: 256
+  depth: 4
+  num_heads: 8
+  mlp_ratio: 4.0
+  qkv_bias: true
+  init_tau: 2.0
+  drop_rate: 0.0
+  attn_drop_rate: 0.0
+
+# Dataset specific
+nmnist:
+  img_size: 34
+  patch_size: 2
+  in_channels: 2
+  num_classes: 10
+  T: 20
+  batch_size: 32
+  n_time_bins: 20
+
+shd:
+  img_size: 700
+  patch_size: 10
+  in_channels: 2
+  num_classes: 20
+  T: 100
+  batch_size: 32
+  n_time_bins: 100
+
+# Training
+training:
+  epochs: 300            # TSA needs more epochs
+  lr: 0.001
+  weight_decay: 0.05
+  warmup_epochs: 10
+  patience: 30
+  mixed_precision: true
+  gradient_accumulation_steps: 1
+  optimizer: adamw
+  scheduler: cosine
+  label_smoothing: 0.1
+  grad_clip: 1.0
+  spike_reg: 0.001       # energy regularization
+
+# Regularization
+regularization:
+  dropout: 0.0
+  attn_dropout: 0.0
+  spike_reg_weight: 0.001
+
+# Logging
+logging:
+  use_wandb: false
+  log_dir: ./logs/tsa
+  checkpoint_dir: ./checkpoints/tsa
+  save_every: 10
+  project_name: TSA_NEUROIPS
+
+# Biological plausibility
+bio_plausibility:
+  local_learning_rule: false
+  spike_based_communication: true
+  temporal_dynamics: true
+  no_weight_transport: false
+  online_learning: false
+  total_score: 3
+
+# Ablations (for experiments/ablations.py)
+ablations:
+  depths: [2, 4, 6, 8, 12]
+  num_heads: [4, 8, 12, 16]
+  spike_reg_weights: [0.0, 0.0001, 0.001, 0.01, 0.1]
+  time_bins: [10, 20, 40, 80]

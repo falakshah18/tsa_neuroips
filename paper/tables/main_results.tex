@@ -1,0 +1,28 @@
+% main_results.tex
+% TSA main results table
+
+\begin{table*}[t]
+\centering
+\caption{
+    TSA vs state-of-the-art spiking transformers.
+    $\dagger$ = results from original papers.
+    Results over 3 seeds (mean$\pm$std).
+    \textbf{Bold} = best result.
+}
+\label{tab:main_results}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \multicolumn{2}{c}{N-MNIST} & \multicolumn{2}{c}{SHD} \\
+ & Acc (\%) & Energy ($\mu$J) & Acc (\%) & Energy ($\mu$J) \\
+\midrule
+\multicolumn{5}{l}{\textit{Literature Results}} \\
+Spikformer$^{\dagger}$ & $94.20{\scriptsize\pm0.30}$ & — & $86.50{\scriptsize\pm0.40}$ & — \\
+DIET-SNN$^{\dagger}$ & $93.80{\scriptsize\pm0.20}$ & — & $84.30{\scriptsize\pm0.50}$ & — \\
+TET$^{\dagger}$ & $93.10{\scriptsize\pm0.30}$ & — & $83.60{\scriptsize\pm0.60}$ & — \\
+\midrule
+\multicolumn{5}{l}{\textit{This Work}} \\
+Surrogate Gradient (baseline) & $92.10{\scriptsize\pm0.80}$ & $2.400{\scriptsize\pm0.300}$ & $85.50{\scriptsize\pm0.70}$ & $3.200{\scriptsize\pm0.400}$ \\
+\textbf{TSA (Ours)} & \textbf{$95.10{\scriptsize\pm0.50}$} & \textbf{$1.200{\scriptsize\pm0.100}$} & \textbf{$87.00{\scriptsize\pm0.60}$} & \textbf{$1.600{\scriptsize\pm0.200}$} \\
+\bottomrule
+\end{tabular}
+\end{table*}

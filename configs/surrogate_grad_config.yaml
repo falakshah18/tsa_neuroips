@@ -1,0 +1,64 @@
+# configs/surrogate_grad_config.yaml
+# Surrogate Gradient SNN Configuration
+
+algorithm: surrogate_gradient
+description: "SNN trained with ATan surrogate gradient via BPTT"
+
+# Model
+model:
+  in_channels: 2
+  hidden_size: 256
+  tau: 2.0
+  T: 20
+
+# Dataset specific
+nmnist:
+  img_size: 34
+  patch_size: 2
+  num_classes: 10
+  T: 20
+  batch_size: 32
+  n_time_bins: 20
+
+shd:
+  input_size: 700
+  num_classes: 20
+  T: 100
+  batch_size: 32
+  n_time_bins: 100
+  num_layers: 3
+
+# Training
+training:
+  epochs: 100
+  lr: 0.001
+  weight_decay: 0.05
+  warmup_epochs: 10
+  patience: 20
+  mixed_precision: true
+  gradient_accumulation_steps: 1
+  optimizer: adamw
+  scheduler: cosine
+  label_smoothing: 0.1
+  grad_clip: 1.0
+
+# Regularization
+regularization:
+  dropout: 0.5
+  spike_reg: 0.0       # no spike reg for baseline
+
+# Logging
+logging:
+  use_wandb: false
+  log_dir: ./logs/surrogate_grad
+  checkpoint_dir: ./checkpoints/surrogate_grad
+  save_every: 10
+
+# Biological plausibility
+bio_plausibility:
+  local_learning_rule: false
+  spike_based_communication: true
+  temporal_dynamics: true
+  no_weight_transport: false
+  online_learning: false
+  total_score: 2

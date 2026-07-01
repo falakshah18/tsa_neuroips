@@ -1,0 +1,71 @@
+# configs/stdp_config.yaml
+# Supervised STDP Configuration
+
+algorithm: supervised_stdp
+description: "STDP modulated by supervised error signal"
+
+# STDP parameters
+stdp:
+  a_plus: 0.01           # LTP amplitude
+  a_minus: 0.01          # LTD amplitude
+  tau_plus: 20.0         # LTP time constant (ms)
+  tau_minus: 20.0        # LTD time constant (ms)
+  w_min: 0.0             # minimum weight
+  w_max: 1.0             # maximum weight
+  stdp_lr: 0.01          # STDP learning rate
+
+# Model
+model:
+  hidden_size: 256
+  tau: 2.0
+  num_layers: 3
+
+# Dataset specific
+nmnist:
+  img_size: 34
+  in_channels: 2
+  num_classes: 10
+  T: 20
+  batch_size: 32
+  n_time_bins: 20
+
+shd:
+  input_size: 700
+  num_classes: 20
+  T: 100
+  batch_size: 32
+  n_time_bins: 100
+
+# Training
+training:
+  epochs: 100
+  lr: 0.001              # for head (backprop)
+  weight_decay: 0.0
+  warmup_epochs: 0       # no warmup for STDP
+  patience: 20
+  mixed_precision: false
+  gradient_accumulation_steps: 1
+  optimizer: adam
+  scheduler: none
+  label_smoothing: 0.0
+  grad_clip: 1.0
+
+# Regularization
+regularization:
+  dropout: 0.3
+
+# Logging
+logging:
+  use_wandb: false
+  log_dir: ./logs/stdp
+  checkpoint_dir: ./checkpoints/stdp
+  save_every: 10
+
+# Biological plausibility
+bio_plausibility:
+  local_learning_rule: true
+  spike_based_communication: true
+  temporal_dynamics: true
+  no_weight_transport: true
+  online_learning: false
+  total_score: 4

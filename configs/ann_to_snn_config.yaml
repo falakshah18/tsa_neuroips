@@ -1,0 +1,67 @@
+# configs/ann_to_snn_config.yaml
+# ANN-to-SNN Conversion Configuration
+
+algorithm: ann_to_snn
+description: "Train ANN then convert via threshold balancing"
+
+# ANN Training
+ann:
+  optimizer: adam
+  lr: 0.001
+  epochs: 50             # ANN trains faster
+  weight_decay: 0.0001
+  dropout: 0.5
+
+# Conversion
+conversion:
+  percentile: 99.9       # threshold balancing percentile
+  n_calibration_batches: 10
+  T_inference: 100       # timesteps for SNN inference
+  IF_neuron: true        # use IF (no leak) for conversion
+
+# Dataset specific
+nmnist:
+  img_size: 34
+  in_channels: 2
+  num_classes: 10
+  T: 100
+  batch_size: 32
+  n_time_bins: 20
+
+shd:
+  input_size: 700
+  hidden_size: 256
+  num_classes: 20
+  T: 100
+  batch_size: 32
+  n_time_bins: 100
+
+# Training (ANN phase)
+training:
+  epochs: 50
+  lr: 0.001
+  weight_decay: 0.0001
+  warmup_epochs: 5
+  patience: 15
+  mixed_precision: false   # ANN training
+  gradient_accumulation_steps: 1
+  optimizer: adam
+  scheduler: cosine
+  label_smoothing: 0.0
+  grad_clip: 1.0
+
+# Logging
+logging:
+  use_wandb: false
+  log_dir: ./logs/ann_to_snn
+  checkpoint_dir: ./checkpoints/ann_to_snn
+  save_every: 10
+
+# Biological plausibility
+bio_plausibility:
+  local_learning_rule: false
+  spike_based_communication: true
+  temporal_dynamics: true
+  no_weight_transport: false
+  online_learning: false
+  total_score: 2
