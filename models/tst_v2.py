@@ -187,18 +187,18 @@ class TemporalSpikingTransformer(nn.Module):
         
         return x, {'blocks': all_metrics}
     
-        @torch.no_grad()
+    @torch.no_grad()
     def get_energy_breakdown(self, x: torch.Tensor) -> dict:
+        """Fixed and correctly indented."""
         functional.reset_net(self)
         _, metrics = self.forward(x)
         
         total_spikes = 0
-        # Safely extract spikes from block metrics
         for block in metrics.get('blocks', []):
             attn = block.get('attention', {})
             total_spikes += attn.get('total_spikes', 0)
         
         return {
             'total_spikes': total_spikes,
-            'energy_per_sample_uJ': total_spikes * 0.1,  # simplified
+            'energy_per_sample_uJ': total_spikes * 0.1,
         }
