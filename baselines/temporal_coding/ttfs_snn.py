@@ -24,7 +24,7 @@ Biological plausibility score: 3/5
 
 import torch
 import torch.nn as nn
-from spikingjelly.activation_based import neuron, surrogate, layer, functional
+from spikingjelly.activation_based import neuron, surrogate, layer, functional, base
 from typing import Tuple, Dict, Optional
 import numpy as np
 
@@ -143,7 +143,7 @@ class TTFSEncoderNeuromorphic(nn.Module):
 # TTFS Neuron
 # ─────────────────────────────────────────────
 
-class TTFSNeuron(nn.Module):
+class TTFSNeuron(base.MemoryModule):
     """
     LIF neuron that fires at most once (TTFS constraint).
 
@@ -229,7 +229,7 @@ class TTFSNeuron(nn.Module):
 # TTFS Network
 # ─────────────────────────────────────────────
 
-class TTFSLayer(nn.Module):
+class TTFSLayer(base.MemoryModule):
     """
     Single TTFS layer: Linear + TTFSNeuron.
     Processes one timestep at a time.
@@ -267,7 +267,7 @@ class TTFSLayer(nn.Module):
         return spike
 
 
-class TTFSNetwork(nn.Module):
+class TTFSNetwork(base.MemoryModule):
     """
     Full TTFS SNN for temporal classification.
 
@@ -440,7 +440,7 @@ class TTFSNetwork(nn.Module):
         return logits, metrics
 
 
-class TTFSNetwork_Vision(nn.Module):
+class TTFSNetwork_Vision(base.MemoryModule):
     """
     TTFS SNN for vision datasets (N-MNIST, DVS-Gesture).
 

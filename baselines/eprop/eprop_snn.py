@@ -24,7 +24,7 @@ Biological plausibility score: 4/5
 
 import torch
 import torch.nn as nn
-from spikingjelly.activation_based import neuron, surrogate, layer, functional
+from spikingjelly.activation_based import neuron, surrogate, layer, functional, base
 from typing import Tuple, Dict, Optional
 import numpy as np
 
@@ -105,7 +105,7 @@ class EligibilityTrace(nn.Module):
         return self.trace
 
 
-class EpropLinear(nn.Module):
+class EpropLinear(base.MemoryModule):
     """
     Linear layer with e-prop learning.
 
@@ -239,7 +239,7 @@ class EpropLinear(nn.Module):
             self.accumulated_dW += dW.detach()
 
 
-class EpropSNN(nn.Module):
+class EpropSNN(base.MemoryModule):
     """
     Full SNN trained with E-prop.
 
@@ -435,7 +435,7 @@ class EpropSNN(nn.Module):
         return logits, metrics
 
 
-class EpropSNN_Vision(nn.Module):
+class EpropSNN_Vision(base.MemoryModule):
     """
     E-prop SNN for vision datasets.
     Conv features (surrogate grad) + E-prop FC layers.
