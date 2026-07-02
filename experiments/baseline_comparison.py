@@ -45,8 +45,8 @@ class _ANNTimeAverageWrapper(torch.nn.Module):
         self.ann = ann
 
     def forward(self, x: torch.Tensor):
-        if x.dim() == 5:
-            x = x.mean(dim=0)  # [T, B, C, H, W] -> [B, C, H, W]
+        if x.dim() >= 3:
+            x = x.mean(dim=0)  # [T, B, ...] -> [B, ...]
         logits = self.ann(x)
         metrics = {'total_spikes': 0.0, 'blocks': []}  # plain ANN: no spikes
         return logits, metrics
@@ -135,13 +135,18 @@ class BaselineComparison:
             return train_loader, val_loader, test_loader
 
         elif dataset == 'shd':
-            sensor_size = (700, 1, 2)
+            # tonic's actual SHD sensor_size has no polarity channel (P=1),
+            # unlike DVS-style vision sensors. See tonic.datasets.SHD.sensor_size.
+            sensor_size = (700, 1, 1)
             n_time_bins = config.get('T', 100)
             transform = transforms.Compose([
                 transforms.ToFrame(
                     sensor_size=sensor_size,
                     n_time_bins=n_time_bins
                 ),
+                # ToFrame yields [T, P, X, Y] = [T, 1, 700, 1]; the SHD model
+                # variants expect a flat [T, input_size] per sample.
+                lambda frame: frame.reshape(frame.shape[0], -1),
             ])
 
             train_ds = datasets.SHD(
@@ -224,6 +229,7 @@ class BaselineComparison:
         test_loader: DataLoader,
         config: dict,
         seed: int,
+        dataset: str,
     ) -> Dict:
         """Special training for ANN-to-SNN: train ANN, then convert."""
         from training.trainer_v2 import AdvancedTrainer
@@ -258,7 +264,42 @@ class BaselineComparison:
 
         train_result = trainer.train()
 
-        # Convert to SNN
+        if dataset == 'shd':
+            # get_ann_to_snn_model() returns snn_class=None for SHD -- there's
+            # no FC-based ConvertedSNN equivalent, only the vision (Conv2d)
+            # ConvertedSNN, which is architecturally incompatible with
+            # SourceANN_SHD's flat FC layers. Evaluate the trained ANN
+            # directly instead of attempting a conversion.
+            eval_model = _ANNTimeAverageWrapper(ann).to(self.device)
+            eval_model.eval()
+
+            total_acc = 0
+            total_samples = 0
+
+            with torch.no_grad():
+                for data, target in test_loader:
+                    data = data.to(self.device).float()
+                    target = target.to(self.device)
+                    if data.dim() >= 3:
+                        data = data.transpose(0, 1).contiguous()  # [B,T,...] -> [T,B,...]
+
+                    logits, _ = eval_model(data)
+                    pred = logits.argmax(dim=1)
+                    acc = (pred == target).float().mean()
+
+                    batch_size = target.shape[0]
+                    total_acc += acc.item() * batch_size
+                    total_samples += batch_size
+
+            return {
+                'test_acc': total_acc / total_samples,
+                'test_energy': 0.0,  # plain ANN, no spikes to count
+                'total_spikes': 0.0,
+                'train_time': train_result.get('train_time', 0),
+                'best_val_acc': train_result.get('best_val_acc', 0),
+            }
+
+        # Convert to SNN (vision datasets only)
         converter = ANNtoSNNConverter(
             percentile=config.get('conversion', {}).get('percentile', 99.9)
         )
@@ -344,7 +385,7 @@ class BaselineComparison:
             ann = ann.to(self.device)
             return self._train_ann_to_snn(
                 ann, train_loader, val_loader, test_loader,
-                algo_config, seed
+                algo_config, seed, dataset
             )
 
         # Create model

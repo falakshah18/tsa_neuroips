@@ -207,7 +207,20 @@ def get_shd_loaders(
     n_time_bins: int = 100,
 ) -> tuple:
     """SHD data loaders."""
-    sensor_size = (700, 1, 2)
+    # tonic's actual SHD sensor_size has no polarity channel (P=1), unlike
+    # DVS-style vision sensors. See tonic.datasets.SHD.sensor_size.
+    #
+    # NOTE: TemporalSpikingTransformer's patch embedding is a genuine 2D
+    # Conv2d expecting square [T, B, C, H, W] spatial input (num_patches =
+    # (img_size // patch_size) ** 2). Real SHD data is a 1D, single-channel,
+    # 700-wide spike train -- it has no 2D spatial structure to patchify.
+    # configs/tsa_config.yaml's shd section (img_size=700, in_channels=2)
+    # appears to have been carried over from the N-MNIST vision config
+    # without adaptation. This loader yields tonic's correct raw frame
+    # shape; TSA's architecture needs a dedicated 1D patch-embedding path
+    # before it can train on SHD at all -- that's an architecture decision,
+    # not something to paper over here. See tsa_shd_compatibility notes.
+    sensor_size = (700, 1, 1)
     transform = transforms.Compose([
         transforms.ToFrame(
             sensor_size=sensor_size,
