@@ -112,9 +112,12 @@ def main():
     # Set datasets
     datasets = [args.dataset] if args.dataset else ['nmnist', 'shd']
 
-    # Override for quick mode
+    # Override for quick mode -- but never clobber an explicitly-requested
+    # dataset. --quick means "fast settings" (1 seed, 5 epochs), not
+    # "always nmnist, ignore whatever --dataset was passed".
     if args.quick:
-        datasets = ['nmnist']
+        if not args.dataset:
+            datasets = ['nmnist']
         args.n_seeds = 1
         args.epochs = 5
         print("\n⚡ QUICK MODE ENABLED")

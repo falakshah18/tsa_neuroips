@@ -327,10 +327,11 @@ def print_final_summary(results: dict):
 def main():
     args = parse_args()
 
-    # Quick mode override
+    # Quick mode override -- only affects seeds/epochs. Datasets/algorithms
+    # come from whatever was explicitly passed via --datasets/--algorithms
+    # (main.py already computes the right dataset list before calling in).
     if args.quick:
-        print("⚡ QUICK MODE: 1 seed, 5 epochs, nmnist only")
-        args.datasets = ['nmnist']
+        print(f"⚡ QUICK MODE: 1 seed, 5 epochs, datasets={args.datasets}")
         args.n_seeds = 1
         args.epochs = 5
 
@@ -361,6 +362,7 @@ def main():
     # Run comparison
     comparison = BaselineComparison(
         datasets=args.datasets,
+        algorithms=args.algorithms,
         n_seeds=args.n_seeds,
         epochs=args.epochs,
         save_dir=args.save_dir,

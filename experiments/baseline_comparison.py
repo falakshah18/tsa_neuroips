@@ -58,15 +58,50 @@ class BaselineComparison:
     This is the main UGRP contribution.
     """
 
+    # Canonical internal algorithm identifiers, and a lookup table that
+    # normalizes both the CLI's display-style names (e.g. 'TTFS',
+    # 'Supervised_STDP') and casual lowercase aliases (e.g. 'stdp',
+    # 'surrogate_grad') down to them. Without this, --algorithm/--algorithms
+    # was silently ignored: run() always iterated a hardcoded list of all 6,
+    # regardless of what was requested.
+    ALL_ALGORITHMS = ['surrogate_gradient', 'ann_to_snn', 'stdp', 'eprop', 'ttfs', 'tsa']
+    _ALGO_ALIASES = {
+        'surrogate_gradient': 'surrogate_gradient', 'surrogate_grad': 'surrogate_gradient',
+        'Surrogate_Gradient': 'surrogate_gradient',
+        'ann_to_snn': 'ann_to_snn', 'ANN_to_SNN': 'ann_to_snn',
+        'stdp': 'stdp', 'supervised_stdp': 'stdp', 'Supervised_STDP': 'stdp',
+        'eprop': 'eprop', 'e_prop': 'eprop', 'E_prop': 'eprop',
+        'ttfs': 'ttfs', 'TTFS': 'ttfs',
+        'tsa': 'tsa', 'tsa_ours': 'tsa', 'TSA_Ours': 'tsa',
+    }
+
+    @classmethod
+    def _normalize_algorithms(cls, algorithms):
+        if not algorithms:
+            return list(cls.ALL_ALGORITHMS)
+        normalized = []
+        for a in algorithms:
+            canonical = cls._ALGO_ALIASES.get(a)
+            if canonical is None:
+                raise ValueError(
+                    f"Unknown algorithm '{a}'. Valid options: "
+                    f"{sorted(set(cls._ALGO_ALIASES.keys()))}"
+                )
+            if canonical not in normalized:
+                normalized.append(canonical)
+        return normalized
+
     def __init__(
         self,
         datasets: List[str] = ['nmnist', 'shd'],
+        algorithms: List[str] = None,
         n_seeds: int = 3,
         epochs: int = 100,
         save_dir: str = './baseline_comparison_results',
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
     ):
         self.datasets = datasets
+        self.algorithms = self._normalize_algorithms(algorithms)
         self.n_seeds = n_seeds
         self.epochs = epochs
         self.save_dir = Path(save_dir)
@@ -511,7 +546,7 @@ class BaselineComparison:
         print("RUNNING BASELINE COMPARISON")
         print("=" * 70)
 
-        algorithms = ['surrogate_gradient', 'ann_to_snn', 'stdp', 'eprop', 'ttfs', 'tsa']
+        algorithms = self.algorithms
 
         for dataset in self.datasets:
             print(f"\n{'─'*70}")

@@ -26,6 +26,15 @@ from torch.utils.data import DataLoader
 from spikingjelly.activation_based import functional
 
 try:
+    from tqdm import tqdm
+    _HAS_TQDM = True
+except ImportError:  # pragma: no cover - optional dependency
+    _HAS_TQDM = False
+
+    def tqdm(iterable, **kwargs):  # no-op fallback
+        return iterable
+
+try:
     from torch.utils.tensorboard import SummaryWriter
     _HAS_TENSORBOARD = True
 except ImportError:  # pragma: no cover - optional dependency
@@ -203,7 +212,14 @@ class AdvancedTrainer:
 
         self.optimizer.zero_grad()
 
-        for step, (x, y) in enumerate(self.train_loader):
+        pbar = tqdm(
+            enumerate(self.train_loader),
+            total=len(self.train_loader),
+            desc=f"  epoch {epoch + 1}",
+            leave=False,
+            disable=not _HAS_TQDM,
+        )
+        for step, (x, y) in pbar:
             x, y = self._prepare_batch(x, y)
 
             with torch.amp.autocast('cuda', enabled=self.use_amp):
@@ -232,6 +248,9 @@ class AdvancedTrainer:
 
             total_loss += loss.item() * accum_steps
             n_batches += 1
+
+            if _HAS_TQDM:
+                pbar.set_postfix(loss=f"{total_loss / n_batches:.4f}")
 
         # Flush any remaining accumulated gradients.
         if n_batches % accum_steps != 0:
