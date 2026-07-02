@@ -159,6 +159,11 @@ class AdvancedTrainer:
         x = x.to(self.device, non_blocking=True)
         y = y.to(self.device, non_blocking=True)
 
+        # tonic's ToFrame (used for NMNIST/SHD) yields integer (e.g. int16/Short)
+        # event-count frames. Conv/Linear layers have float32 weights, so this
+        # must be cast to float before it reaches any layer.
+        x = x.float()
+
         # DataLoaders typically yield [B, T, ...]; models expect [T, B, ...].
         if x.dim() >= 3:
             x = x.transpose(0, 1).contiguous()

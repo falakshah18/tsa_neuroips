@@ -14,7 +14,7 @@ from tqdm import tqdm
 import yaml
 
 from baselines.surrogate_gradient import get_surrogate_grad_model
-from baselines.ann_to_snn import get_ann_to_snn_model, ANNtoSNNConverter
+from baselines.ann_to_snn import get_ann_to_snn_model, ANNtoSNNConverter, ConvertedSNN
 from baselines.stdp import get_stdp_model
 from baselines.eprop import get_eprop_model
 from baselines.temporal_coding import get_ttfs_model
@@ -24,6 +24,32 @@ from models.tst_v2 import TemporalSpikingTransformer
 from tonic import datasets, transforms
 from torch.utils.data import DataLoader, random_split
 from spikingjelly.activation_based import functional
+
+
+class _ANNTimeAverageWrapper(torch.nn.Module):
+    """
+    Adapts a plain (non-spiking) SourceANN/SourceANN_SHD for training through
+    AdvancedTrainer, which always feeds [T, B, ...] and expects a
+    (logits, metrics) tuple back.
+
+    SourceANN itself expects a single averaged frame [B, C, H, W] (see its
+    docstring: "for neuromorphic data, average over T first") and returns a
+    bare tensor. This wrapper does the averaging and tuple-wrapping so the
+    same generic trainer can be reused, while leaving the wrapped `ann`'s
+    parameters/identity untouched (training this wrapper trains `ann` itself,
+    since it's held by reference, not copied).
+    """
+
+    def __init__(self, ann: torch.nn.Module):
+        super().__init__()
+        self.ann = ann
+
+    def forward(self, x: torch.Tensor):
+        if x.dim() == 5:
+            x = x.mean(dim=0)  # [T, B, C, H, W] -> [B, C, H, W]
+        logits = self.ann(x)
+        metrics = {'total_spikes': 0.0, 'blocks': []}  # plain ANN: no spikes
+        return logits, metrics
 
 
 class BaselineComparison:
@@ -221,7 +247,7 @@ class BaselineComparison:
         }
 
         trainer = AdvancedTrainer(
-            model=ann,
+            model=_ANNTimeAverageWrapper(ann),
             train_loader=train_loader,
             val_loader=val_loader,
             test_loader=test_loader,
@@ -262,19 +288,20 @@ class BaselineComparison:
 
         with torch.no_grad():
             for data, target in test_loader:
-                data = data.to(self.device)
+                data = data.to(self.device).float()
                 target = target.to(self.device)
 
                 if data.dim() == 5:
-                    # [T, B, C, H, W] → [T, B, ...]
-                    pass
+                    # DataLoader yields [B, T, C, H, W]; ConvertedSNN expects [T, B, C, H, W].
+                    data = data.transpose(0, 1).contiguous()
 
                 logits, metrics = snn(data)
                 pred = logits.argmax(dim=1)
                 acc = (pred == target).float().mean()
 
-                total_acc += acc.item() * data.shape[1]
-                total_samples += data.shape[1]
+                batch_size = target.shape[0]
+                total_acc += acc.item() * batch_size
+                total_samples += batch_size
                 total_spikes += metrics['total_spikes']
 
                 functional.reset_net(snn)

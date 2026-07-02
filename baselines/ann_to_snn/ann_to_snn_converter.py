@@ -279,11 +279,12 @@ class ANNtoSNNConverter:
                 if i >= n_batches:
                     break
 
+                data = data.to(device).float()
+
                 # For neuromorphic data average over T
                 if data.dim() == 5:
                     data = data.mean(1)  # [B, C, H, W] — average over T dim
 
-                data = data.to(device)
                 ann(data)
 
         self._remove_hooks()
