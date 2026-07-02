@@ -89,6 +89,21 @@ class AdvancedTrainer:
         device: Optional[str] = None,
         use_wandb: bool = False,
     ):
+        """
+        Args:
+            model: A model following the (logits, metrics) forward
+                interface described in the class docstring.
+            train_loader, val_loader, test_loader: Standard PyTorch
+                DataLoaders. Batches are expected as (x, y) with x shaped
+                [B, T, ...] (batch-first, as DataLoader's default_collate
+                produces) -- `_prepare_batch` transposes to [T, B, ...]
+                before the model sees it.
+            config: Overrides merged onto DEFAULT_CONFIG (see module level
+                constant above for every available key and its default).
+            device: 'cuda' or 'cpu'. Defaults to cuda if available.
+            use_wandb: Enable Weights & Biases logging. Silently falls back
+                to disabled if wandb isn't installed.
+        """
         self.config = {**DEFAULT_CONFIG, **(config or {})}
 
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
@@ -136,6 +151,7 @@ class AdvancedTrainer:
     # ------------------------------------------------------------------
 
     def _build_optimizer(self) -> torch.optim.Optimizer:
+        """AdamW over all model parameters, using config['lr']/['weight_decay']."""
         return torch.optim.AdamW(
             self.model.parameters(),
             lr=self.config['lr'],
@@ -143,6 +159,12 @@ class AdvancedTrainer:
         )
 
     def _build_scheduler(self):
+        """
+        Linear warmup for config['warmup_epochs'], then cosine decay from
+        config['lr'] down to config['min_lr'] over the remaining epochs.
+        Implemented as a single LambdaLR so both phases share one scheduler
+        object (stepped once per epoch in `train`).
+        """
         epochs = max(int(self.config['epochs']), 1)
         warmup_epochs = min(int(self.config.get('warmup_epochs', 0)), epochs)
         base_lr = self.config['lr']
@@ -203,6 +225,24 @@ class AdvancedTrainer:
     # ------------------------------------------------------------------
 
     def train_epoch(self, epoch: int) -> float:
+        """
+        Run one full pass over train_loader.
+
+        Handles gradient accumulation (accumulates `accum_steps` batches
+        before each optimizer step), AMP (mixed precision, only active on
+        CUDA), gradient clipping, and the spike-count energy regularizer
+        (added to the loss, weighted by config['spike_reg']). Resets all
+        neuron membrane state after every batch via
+        `functional.reset_net`, since each batch is an independent sample
+        sequence.
+
+        Args:
+            epoch: Current epoch index (0-based), used only for the
+                progress bar label.
+
+        Returns:
+            Mean training loss over the epoch.
+        """
         self.model.train()
         total_loss = 0.0
         n_batches = 0
@@ -265,6 +305,22 @@ class AdvancedTrainer:
 
     @torch.no_grad()
     def evaluate(self, loader: DataLoader) -> Dict:
+        """
+        Run inference over `loader` with gradients disabled.
+
+        Used for both validation (during `train`) and the final test
+        evaluation, since the two only differ in which loader is passed.
+
+        Args:
+            loader: Any of train_loader/val_loader/test_loader, or an
+                external DataLoader with the same (x, y) batch format.
+
+        Returns:
+            Dict with 'loss' (mean cross-entropy), 'acc' (accuracy in
+            [0, 1]), and 'avg_energy_uJ' (estimated energy per sample, at
+            0.1 pJ/spike -- see models.tst_v2.get_energy_breakdown for the
+            same constant used elsewhere).
+        """
         self.model.eval()
         total_loss = 0.0
         correct = 0
@@ -305,6 +361,16 @@ class AdvancedTrainer:
     # ------------------------------------------------------------------
 
     def save_checkpoint(self, epoch: int, is_best: bool = False):
+        """
+        Save model/optimizer/scheduler state to checkpoint_dir/last.pth,
+        and additionally to checkpoint_dir/best.pth if is_best is True.
+
+        Args:
+            epoch: Current epoch index, stored in the checkpoint for
+                resuming.
+            is_best: Whether this epoch achieved the best validation
+                accuracy so far.
+        """
         state = {
             'epoch': epoch,
             'model_state_dict': self.model.state_dict(),
@@ -318,6 +384,17 @@ class AdvancedTrainer:
             torch.save(state, self.checkpoint_dir / 'best.pth')
 
     def load_checkpoint(self, path: str):
+        """
+        Restore model/optimizer/scheduler state from a checkpoint saved by
+        `save_checkpoint`. Also restores `best_val_acc` so early stopping
+        and best-model tracking stay consistent across a resumed run.
+
+        Args:
+            path: Path to a .pth file saved by save_checkpoint.
+
+        Returns:
+            The epoch index stored in the checkpoint (0 if absent).
+        """
         ckpt = torch.load(path, map_location=self.device)
         self.model.load_state_dict(ckpt['model_state_dict'])
         if 'optimizer_state_dict' in ckpt:
@@ -332,6 +409,22 @@ class AdvancedTrainer:
     # ------------------------------------------------------------------
 
     def train(self) -> Dict:
+        """
+        Full training loop: for each epoch, train one pass, validate,
+        step the LR scheduler, checkpoint, log, and check early stopping.
+        After the loop ends (either all epochs completed or early
+        stopping triggered), reloads the best checkpoint (by validation
+        accuracy) if one was saved, then runs a final evaluation on
+        test_loader.
+
+        Returns:
+            Dict with:
+                best_val_acc: Best validation accuracy seen during training.
+                test_metrics: Output of `evaluate(test_loader)` using the
+                    best checkpoint's weights.
+                history: Dict of per-epoch lists ('train_loss', 'val_loss',
+                    'val_acc') for plotting/analysis.
+        """
         epochs = int(self.config['epochs'])
         patience = int(self.config.get('patience', epochs))
 

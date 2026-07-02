@@ -1,10 +1,42 @@
 # models/tst_v2.py
 """
-VERSION 2: Production-ready implementation
-- All hyperparameters learnable
-- Extensive logging
-- Gradient flow analysis
-- Memory efficient
+Temporal Spiking Attention (TSA) and the Temporal Spiking Transformer (TST).
+
+This module implements the paper's core architectural contribution: a
+spiking-neuron-based replacement for softmax attention.
+
+Standard transformer attention computes a continuous weight for every
+query/key pair via softmax(QK^T / sqrt(d)). TSA replaces this with genuine
+spiking-neuron dynamics. For each head, a leaky "attention membrane"
+integrates query/key coincidence over time:
+
+    m_t = beta * m_{t-1} + (q_t . k_t) / temperature
+
+where beta = sigmoid(attn_tau) is a per-head, *learnable* decay rate (as
+opposed to a fixed hyperparameter). A pair only "attends" to each other at
+timestep t if the membrane crosses a per-head, learnable threshold
+theta = softplus(attn_threshold):
+
+    spike_t = 1[m_t > theta]          (hard, used in the forward pass)
+    spike_t ~= sigmoid(10 * (m_t - theta))   (soft, used for the backward pass)
+
+The soft/hard split (see `compute_spike_attention`) is a straight-through
+surrogate-gradient estimator: the forward pass uses the true binary spike
+(so the model's actual behavior is genuinely event-driven / sparse), while
+gradients flow through the smooth sigmoid approximation, since the hard
+step function has zero gradient almost everywhere.
+
+Class hierarchy:
+    LearnableTSA                 -- one spiking multi-head attention layer
+    TSABlock                     -- LearnableTSA + spiking MLP + residuals
+    TemporalSpikingTransformer   -- patch embedding + N x TSABlock + head
+
+All modules operate in SpikingJelly's multi-step mode: every tensor carries
+an explicit leading time dimension T, i.e. shape [T, B, ...], and neuron
+state (membrane potentials) persists across calls until
+`spikingjelly.activation_based.functional.reset_net()` is invoked --
+typically once per training/eval batch, since each batch is a fresh sample
+sequence.
 """
 
 import torch
@@ -18,6 +50,33 @@ logger = logging.getLogger(__name__)
 
 
 class LearnableTSA(nn.Module):
+    """
+    Multi-head Temporal Spiking Attention.
+
+    Drop-in spiking replacement for standard multi-head softmax attention.
+    Queries, keys, and values are each passed through their own spiking
+    (LIF) neuron before the attention computation itself, so by the time
+    `compute_spike_attention` runs, q/k/v are already binary spike trains
+    rather than continuous activations.
+
+    Args:
+        dim: Total embedding dimension (must be divisible by num_heads).
+        num_heads: Number of attention heads.
+        qkv_bias: Whether the Q/K/V projection includes a bias term.
+        attn_drop: Dropout probability applied to attention spikes.
+        proj_drop: Dropout probability applied after the output projection.
+        init_tau: Initial value for each neuron's membrane time constant.
+        init_threshold: Initial value for the per-head attention threshold
+            (before the softplus that keeps it positive).
+        learnable_tau: If True, the per-head decay rate `attn_tau` is a
+            trainable parameter; if False, it stays fixed at its init value.
+        learnable_threshold: Same, but for `attn_threshold`.
+
+    Shape:
+        Input: [T, B, N, dim] (T timesteps, batch B, N tokens/patches)
+        Output: [T, B, N, dim], plus a metrics dict with spike statistics.
+    """
+
     def __init__(
         self, 
         dim: int, 
@@ -53,6 +112,30 @@ class LearnableTSA(nn.Module):
         self.proj_neuron = neuron.ParametricLIFNode(init_tau=init_tau, surrogate_function=surrogate.ATan(), detach_reset=True)
         
     def compute_spike_attention(self, q, k, v, T):
+        """
+        Run the leaky-integrate-and-fire attention dynamics over T timesteps.
+
+        For each head h, maintains a membrane potential `attn_mem` per
+        query/key pair, updated as:
+            attn_mem = beta_h * attn_mem + (q_t . k_t) / temperature_h
+        A spike fires (and the membrane resets toward 0) wherever
+        `attn_mem` exceeds the per-head threshold theta_h. Spiking pairs
+        gate how much of v_t is read into the output at that timestep,
+        exactly as attention weights would in standard softmax attention --
+        except the "weight" here is strictly binary (0 or 1) per pair per
+        step, not a continuous value.
+
+        Args:
+            q, k, v: Spike tensors of shape [T, B, num_heads, N, head_dim],
+                already passed through their respective LIF neurons.
+            T: Number of timesteps (must match q/k/v's leading dimension).
+
+        Returns:
+            output: Tensor of shape [T, B, N, num_heads * head_dim].
+            metrics: Dict with 'total_spikes' (int) and 'avg_spike_rate'
+                (fraction of all query/key/timestep/head cells that spiked)
+                -- used for the energy regularizer and reporting.
+        """
         _, B, H, N, C = q.shape
         beta = torch.sigmoid(self.attn_tau)
         theta = F.softplus(self.attn_threshold)
@@ -86,6 +169,15 @@ class LearnableTSA(nn.Module):
         return output, metrics
     
     def forward(self, x: torch.Tensor):
+        """
+        Args:
+            x: [T, B, N, dim] input sequence.
+
+        Returns:
+            Tuple of (output [T, B, N, dim], metrics dict with key
+            'attention' containing spike statistics from
+            `compute_spike_attention`).
+        """
         T, B, N, C = x.shape
         qkv = self.qkv(x).reshape(T, B, N, 3, self.num_heads, self.head_dim).permute(3, 0, 1, 4, 2, 5)
         q, k, v = qkv[0], qkv[1], qkv[2]
@@ -104,6 +196,20 @@ class LearnableTSA(nn.Module):
 
 
 class TSABlock(nn.Module):
+    """
+    One transformer block: LearnableTSA attention + spiking MLP, each with
+    a residual connection and LayerNorm (post-norm, following the original
+    Transformer rather than the pre-norm variant).
+
+    Args:
+        dim: Embedding dimension.
+        num_heads: Number of attention heads (passed to LearnableTSA).
+        mlp_ratio: Hidden-layer width of the MLP as a multiple of `dim`.
+        qkv_bias, drop, attn_drop, init_tau, learnable_tau,
+        learnable_threshold: Passed through to LearnableTSA; see its
+            docstring for details.
+    """
+
     def __init__(self, dim, num_heads, mlp_ratio=4.0, qkv_bias=True, drop=0.0, attn_drop=0.0, init_tau=2.0,
                  learnable_tau=True, learnable_threshold=True):
         super().__init__()
@@ -122,6 +228,14 @@ class TSABlock(nn.Module):
         )
         
     def forward(self, x):
+        """
+        Args:
+            x: [T, B, N, dim] input sequence.
+
+        Returns:
+            Tuple of (output [T, B, N, dim], metrics dict passed through
+            unchanged from LearnableTSA.forward).
+        """
         attn_out, attn_metrics = self.attn(x)
         x = self.norm1(x + attn_out)
         x = self.norm2(x + self.mlp(x))
@@ -129,6 +243,36 @@ class TSABlock(nn.Module):
 
 
 class TemporalSpikingTransformer(nn.Module):
+    """
+    Full TSA-based vision transformer for event-based (neuromorphic) data.
+
+    Pipeline: Conv2d patch embedding (with its own LIF neuron) -> learnable
+    positional embedding -> `depth` x TSABlock -> LayerNorm -> mean-pool
+    over patches -> spiking classification head -> mean-pool over time.
+
+    Architecturally this is a standard Vision Transformer with every dense
+    attention/MLP activation replaced by spiking-neuron dynamics, and
+    softmax attention replaced by LearnableTSA. The patch embedding is a
+    genuine 2D convolution, so this model expects real 2D spatial
+    structure in its input (e.g. N-MNIST's 34x34 event frames) -- it is
+    not currently suited to 1D spike trains like SHD's 700-channel audio
+    data, which has no such spatial structure to patchify.
+
+    Args:
+        img_size: Height/width of the (square) input frames.
+        patch_size: Side length of each square patch; num_patches =
+            (img_size // patch_size) ** 2.
+        in_channels: Number of input channels (e.g. 2 for DVS on/off
+            polarity channels).
+        num_classes: Number of output classes.
+        embed_dim: Transformer embedding dimension.
+        depth: Number of TSABlocks stacked.
+        num_heads: Attention heads per block.
+        mlp_ratio, qkv_bias, drop_rate, attn_drop_rate, init_tau,
+        learnable_tau, learnable_threshold: Passed through to each
+            TSABlock; see LearnableTSA's docstring for details.
+    """
+
     def __init__(
         self,
         img_size=34,
@@ -177,6 +321,19 @@ class TemporalSpikingTransformer(nn.Module):
         functional.set_step_mode(self, 'm')
     
     def forward(self, x):
+        """
+        Args:
+            x: [T, B, C, H, W] input event frames (T timesteps).
+
+        Returns:
+            Tuple of:
+                logits: [B, num_classes], averaged over the time dimension
+                    (i.e. the model votes at every timestep and the final
+                    prediction is the mean of those votes).
+                metrics: Dict with key 'blocks', a list of one metrics
+                    dict per TSABlock (see LearnableTSA.forward), used for
+                    energy estimation and spike-rate regularization.
+        """
         T, B, C, H, W = x.shape
         x = self.patch_embed(x).flatten(3).transpose(2, 3)  # [T, B, N, D]
         x = x + self.pos_embed
@@ -196,7 +353,28 @@ class TemporalSpikingTransformer(nn.Module):
     
     @torch.no_grad()
     def get_energy_breakdown(self, x: torch.Tensor) -> dict:
-        """Fixed and correctly indented."""
+        """
+        Estimate inference energy from total spike count.
+
+        Runs a single forward pass (resetting neuron state first) and
+        converts the total number of spikes across all attention layers
+        into an energy estimate, using a fixed per-spike energy cost. This
+        is the standard first-order neuromorphic energy proxy: each spike
+        corresponds to one synaptic event, and 0.1 pJ/spike is a
+        commonly-cited figure for digital neuromorphic hardware (e.g.
+        Loihi-class chips) -- see `hardware/loihi2_deployment.py` for a
+        more detailed, hardware-specific estimate.
+
+        Args:
+            x: [T, B, C, H, W] input batch to run inference on.
+
+        Returns:
+            Dict with:
+                total_spikes: Total spike count across all attention layers.
+                total_energy_J: total_spikes * 0.1e-12 (Joules).
+                energy_per_sample_uJ: total_energy_J normalized by batch
+                    size, in microjoules.
+        """
         functional.reset_net(self)
         _, metrics = self.forward(x)
         
