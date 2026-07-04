@@ -22,7 +22,7 @@ from models.tst_v2 import TemporalSpikingTransformer
 
 # Dataset imports
 from tonic import datasets, transforms
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, Subset
 from spikingjelly.activation_based import functional
 
 
@@ -99,6 +99,7 @@ class BaselineComparison:
         epochs: int = 100,
         save_dir: str = './baseline_comparison_results',
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
+        quick: bool = False,
     ):
         self.datasets = datasets
         self.algorithms = self._normalize_algorithms(algorithms)
@@ -107,11 +108,27 @@ class BaselineComparison:
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self.device = device
+        self.quick = quick
         self.results = {}
         self.bio_scores = {}
 
         # Load configs
         self.configs = self._load_configs()
+
+    @staticmethod
+    def _subsample(dataset, n: int):
+        """
+        Truncate a dataset to at most n samples, for quick-mode smoke tests.
+
+        Without this, --quick only reduces epochs/seeds but still iterates
+        the *entire* real dataset every epoch (e.g. all ~60k N-MNIST
+        training images), which can take hours on CPU -- defeating the
+        purpose of a fast sanity check. Uses a fixed (unshuffled) prefix
+        rather than a random sample, so quick runs are also deterministic
+        and reproducible run-to-run.
+        """
+        n = min(n, len(dataset))
+        return Subset(dataset, list(range(n)))
 
     def _load_configs(self) -> dict:
         """Load algorithm configs."""
@@ -151,6 +168,11 @@ class BaselineComparison:
             train_size = int(0.9 * len(train_ds))
             val_size = len(train_ds) - train_size
             train_ds, val_ds = random_split(train_ds, [train_size, val_size])
+
+            if self.quick:
+                train_ds = self._subsample(train_ds, 320)
+                val_ds = self._subsample(val_ds, 128)
+                test_ds = self._subsample(test_ds, 128)
 
             batch_size = config.get('batch_size', 32)
 
@@ -194,6 +216,11 @@ class BaselineComparison:
             train_size = int(0.9 * len(train_ds))
             val_size = len(train_ds) - train_size
             train_ds, val_ds = random_split(train_ds, [train_size, val_size])
+
+            if self.quick:
+                train_ds = self._subsample(train_ds, 320)
+                val_ds = self._subsample(val_ds, 128)
+                test_ds = self._subsample(test_ds, 128)
 
             batch_size = config.get('batch_size', 32)
 

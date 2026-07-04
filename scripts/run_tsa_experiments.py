@@ -42,7 +42,7 @@ from experiments.benchmarks import BaselineComparison
 from experiments.statistical_validation import StatisticalValidator
 from hardware.loihi2_deployment import LoihiSimulator
 from tonic import datasets, transforms
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, Subset
 from spikingjelly.activation_based import functional
 
 
@@ -154,9 +154,23 @@ def load_tsa_config() -> dict:
 # Data Loaders
 # ─────────────────────────────────────────────
 
+def _subsample(dataset, n: int):
+    """
+    Truncate a dataset to at most n samples, for quick-mode smoke tests.
+
+    Without this, --quick only reduces epochs/seeds but still iterates the
+    entire real dataset every epoch (e.g. all ~60k N-MNIST training
+    images), which can take hours on CPU. Uses a fixed (unshuffled) prefix
+    for determinism across runs.
+    """
+    n = min(n, len(dataset))
+    return Subset(dataset, list(range(n)))
+
+
 def get_nmnist_loaders(
     batch_size: int = 32,
     n_time_bins: int = 20,
+    quick: bool = False,
 ) -> tuple:
     """N-MNIST data loaders."""
     sensor_size = (34, 34, 2)
@@ -183,6 +197,11 @@ def get_nmnist_loaders(
         train_ds, [train_size, val_size]
     )
 
+    if quick:
+        train_ds = _subsample(train_ds, 320)
+        val_ds = _subsample(val_ds, 128)
+        test_ds = _subsample(test_ds, 128)
+
     train_loader = DataLoader(
         train_ds, batch_size=batch_size,
         shuffle=True, num_workers=4,
@@ -205,6 +224,7 @@ def get_nmnist_loaders(
 def get_shd_loaders(
     batch_size: int = 32,
     n_time_bins: int = 100,
+    quick: bool = False,
 ) -> tuple:
     """SHD data loaders."""
     # tonic's actual SHD sensor_size has no polarity channel (P=1), unlike
@@ -243,6 +263,11 @@ def get_shd_loaders(
         train_ds, [train_size, val_size]
     )
 
+    if quick:
+        train_ds = _subsample(train_ds, 320)
+        val_ds = _subsample(val_ds, 128)
+        test_ds = _subsample(test_ds, 128)
+
     train_loader = DataLoader(
         train_ds, batch_size=batch_size,
         shuffle=True, num_workers=4,
@@ -262,17 +287,19 @@ def get_shd_loaders(
     return train_loader, val_loader, test_loader
 
 
-def get_loaders(dataset: str, config: dict) -> tuple:
+def get_loaders(dataset: str, config: dict, quick: bool = False) -> tuple:
     """Factory for data loaders."""
     if dataset == 'nmnist':
         return get_nmnist_loaders(
             batch_size=config.get('batch_size', 32),
             n_time_bins=config.get('T', 20),
+            quick=quick,
         )
     elif dataset == 'shd':
         return get_shd_loaders(
             batch_size=config.get('batch_size', 32),
             n_time_bins=config.get('T', 100),
+            quick=quick,
         )
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
@@ -315,6 +342,7 @@ def run_training(
     save_dir: Path,
     device: str,
     load_checkpoint: str = None,
+    quick: bool = False,
 ) -> Dict:
     """
     Train TSA on all datasets with multiple seeds.
@@ -336,7 +364,7 @@ def run_training(
         # Get data loaders
         try:
             train_loader, val_loader, test_loader = get_loaders(
-                dataset, ds_config
+                dataset, ds_config, quick=quick
             )
         except Exception as e:
             print(f"  ⚠️  Could not load dataset '{dataset}': {e}")
@@ -459,6 +487,7 @@ def run_ablations(
     ablation_epochs: int,
     save_dir: Path,
     device: str,
+    quick: bool = False,
 ) -> Dict:
     """
     Run all ablation studies on N-MNIST.
@@ -472,7 +501,7 @@ def run_ablations(
     ds_config = config.get('nmnist', {})
     try:
         train_loader, val_loader, test_loader = get_loaders(
-            'nmnist', ds_config
+            'nmnist', ds_config, quick=quick
         )
     except Exception as e:
         print(f"  ⚠️  Could not load dataset 'nmnist': {e}")
@@ -526,6 +555,7 @@ def run_hardware_validation(
     config: dict,
     save_dir: Path,
     device: str,
+    quick: bool = False,
 ) -> Dict:
     """
     Simulate Loihi 2 energy consumption.
@@ -544,7 +574,7 @@ def run_hardware_validation(
 
         ds_config = config.get(dataset, {})
         try:
-            _, _, test_loader = get_loaders(dataset, ds_config)
+            _, _, test_loader = get_loaders(dataset, ds_config, quick=quick)
         except Exception as e:
             print(f"  ⚠️  Could not load dataset '{dataset}': {e}")
             hardware_results[dataset] = {'error': str(e)}
@@ -762,6 +792,7 @@ def main():
             save_dir=save_dir,
             device=args.device,
             load_checkpoint=args.load_checkpoint,
+            quick=args.quick,
         )
         print_tsa_summary(training_results)
 
@@ -771,6 +802,7 @@ def main():
             ablation_epochs=args.ablation_epochs,
             save_dir=save_dir,
             device=args.device,
+            quick=args.quick,
         )
 
     if args.mode in ['all', 'hardware']:
@@ -779,6 +811,7 @@ def main():
             config=config,
             save_dir=save_dir,
             device=args.device,
+            quick=args.quick,
         )
 
     if args.mode in ['all', 'statistical']:

@@ -367,6 +367,7 @@ def main():
         epochs=args.epochs,
         save_dir=args.save_dir,
         device=args.device,
+        quick=args.quick,
     )
 
     # Inject existing results if resuming
