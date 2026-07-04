@@ -176,7 +176,7 @@ class ConvertedSNN(nn.Module):
             layer.Linear(feature_size, 512),
             neuron.LIFNode(
                 tau=float('inf'),
-                v_threshold=self.thresholds.get('classifier.1', 1.0),
+                v_threshold=self.thresholds.get('classifier.2', 1.0),
                 surrogate_function=surrogate.ATan(),
                 detach_reset=True
             ),
