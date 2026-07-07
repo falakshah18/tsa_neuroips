@@ -19,11 +19,11 @@
        Bridging Attention Mechanisms with Neuromorphic Efficiency}
 
 \author{
-  Your Name \\
+  Falak Shah \\
   Department of Computer Science\\
-  Your University\\
-  City, Country \\
-  \texttt{your.email@university.edu}
+  [AFFILIATION PENDING] \\
+  [CITY, COUNTRY PENDING] \\
+  \texttt{[EMAIL PENDING]}
 }
 
 \begin{document}
@@ -31,7 +31,7 @@
 \maketitle
 
 \begin{abstract}
-We present Temporal Sparse Spiking Transformers (TST), a novel neuromorphic architecture that achieves transformer-level accuracy with event-driven energy efficiency. Our key innovations include: (1) a spike-based temporal attention mechanism with provable $O(N)$ expected complexity, (2) learnable membrane dynamics that approximate softmax attention with bounded error, and (3) hardware-validated energy consumption $<1\%$ of standard transformers. On neuromorphic benchmarks (N-MNIST, DVS-Gesture, CIFAR10-DVS, SHD), TST achieves $96.8\pm0.3\%$ mean accuracy with $1.2\pm0.1\,\mu$J energy per sample, outperforming prior spiking methods by $2.6\%$ accuracy while reducing energy by $7.2\times$ (statistically significant, $p<0.001$). We provide theoretical analysis, comprehensive ablations, and open-source implementation.
+We present Temporal Sparse Spiking Transformers (TST), a novel neuromorphic architecture that achieves transformer-level accuracy with event-driven energy efficiency. Our key innovations include: (1) a spike-based temporal attention mechanism with provable $O(N)$ expected complexity, (2) learnable membrane dynamics that approximate softmax attention with bounded error, and (3) hardware-validated energy consumption $<1\%$ of standard transformers. On N-MNIST, TST achieves [RESULTS PENDING: multi-seed N-MNIST evaluation] mean accuracy with [RESULTS PENDING: N-MNIST energy measurement] energy per sample, outperforming prior spiking methods by [RESULTS PENDING: comparison vs baselines] while reducing energy by [RESULTS PENDING: hardware validation] (statistical significance [RESULTS PENDING]). We provide theoretical analysis, comprehensive ablations, and open-source implementation.
 \end{abstract}
 
 \section{Introduction}
@@ -51,16 +51,16 @@ Transformers have revolutionized deep learning \cite{vaswani2017attention}, but 
         \item Energy bounds $E \leq E_{\text{ANN}} \cdot s \cdot \alpha$ (Theorem~\ref{thm:energy})
     \end{itemize}
     
-    \item \textbf{Empirical:} State-of-the-art results on 4 neuromorphic benchmarks:
+    \item \textbf{Empirical:} Results on neuromorphic benchmarks:
     \begin{itemize}
-        \item N-MNIST: $96.8\%$ (previous best: $94.2\%$)
-        \item DVS-Gesture: $97.9\%$ (previous best: $97.2\%$)
-        \item CIFAR10-DVS: $82.3\%$ (previous best: $81.2\%$)
-        \item SHD: $87.6\%$ (previous best: $86.5\%$)
+        \item N-MNIST: [RESULTS PENDING: multi-seed N-MNIST evaluation] (baseline comparisons [RESULTS PENDING])
+        \item DVS-Gesture: [NOT IMPLEMENTED: dataset loader not in codebase — requires future work]
+        \item CIFAR10-DVS: [NOT IMPLEMENTED: dataset loader not in codebase — requires future work]
+        \item SHD: [RESULTS PENDING: baseline-only comparison on SHD (TSA does not support SHD due to Conv2d patch embedding)]
     \end{itemize}
-    All improvements statistically significant ($p < 0.001$, paired t-test, $n=10$ seeds).
+    Statistical significance [RESULTS PENDING].
     
-    \item \textbf{Hardware:} Loihi 2 validation showing $1.2\,\mu$J energy per inference, $7.2\times$ reduction vs. Spikformer, $290\times$ vs. standard transformers.
+    \item \textbf{Hardware:} Loihi 2 simulation showing [RESULTS PENDING: hardware validation] energy per inference, [RESULTS PENDING: energy reduction] vs. baselines.
     
     \item \textbf{Reproducibility:} Open-source code, pretrained models, and comprehensive ablations.
 \end{itemize}
@@ -189,7 +189,7 @@ On Loihi 2 hardware, TSA energy satisfies:
 where $E_{\text{spike}} = 0.1\,\text{pJ}$, $E_{\text{MAC}} = 4.6\,\text{pJ}$.
 \end{theorem}
 
-With empirical spike rate $s \approx 0.1$, this yields $\approx 46\times$ energy reduction.
+With typical spike rate $s \approx 0.1$, this yields $\approx 46\times$ theoretical energy reduction.
 
 \subsection{Complete Architecture}
 
@@ -209,10 +209,10 @@ See Appendix~\ref{app:architecture} for full details.
 
 \paragraph{Datasets:}
 \begin{itemize}
-    \item \textbf{N-MNIST:} Neuromorphic MNIST (34×34×2, 10 classes)
-    \item \textbf{DVS-Gesture:} Hand gesture recognition (128×128×2, 11 classes)
-    \item \textbf{CIFAR10-DVS:} Neuromorphic CIFAR10 (128×128×2, 10 classes)
-    \item \textbf{SHD:} Spiking Heidelberg Digits (700 channels, 20 classes)
+    \item \textbf{N-MNIST:} Neuromorphic MNIST (34×34×2, 10 classes) --- primary evaluation dataset
+    \item \textbf{SHD:} Spiking Heidelberg Digits (700 channels, 20 classes) --- baselines only (TSA's Conv2d patch embedding cannot process 1D audio)
+    \item \textbf{DVS-Gesture:} [NOT IMPLEMENTED: dataset loader not in codebase]
+    \item \textbf{CIFAR10-DVS:} [NOT IMPLEMENTED: dataset loader not in codebase]
 \end{itemize}
 
 \paragraph{Training:}
@@ -226,13 +226,14 @@ See Appendix~\ref{app:architecture} for full details.
 
 \paragraph{Baselines:}
 \begin{itemize}
-    \item Spikformer \cite{zhou2023spikformer}
-    \item DIET-SNN \cite{rathi2022diet}
-    \item TET \cite{deng2022temporal}
-    \item Standard CNN-SNN
+    \item Surrogate Gradient SNN (standard direct training with ATan surrogate)
+    \item ANN-to-SNN conversion (percentile threshold balancing)
+    \item Supervised STDP (spike-timing-dependent plasticity with error modulation)
+    \item E-prop (eligibility propagation with random feedback alignment)
+    \item TTFS (time-to-first-spike encoding)
 \end{itemize}
 
-All experiments run with 10 random seeds. Statistical significance tested using paired t-tests with Bonferroni correction ($\alpha=0.05$).
+All experiments run with [RESULTS PENDING: N] random seeds. Statistical significance [RESULTS PENDING].
 
 \subsection{Main Results}
 
@@ -240,10 +241,10 @@ All experiments run with 10 random seeds. Statistical significance tested using 
 
 \textbf{Key Findings:}
 \begin{itemize}
-    \item TST achieves SOTA on all 4 datasets
-    \item $2.6\%$ average accuracy improvement over Spikformer ($p < 0.001$)
-    \item $7.2\times$ energy reduction vs. Spikformer
-    \item $290\times$ energy reduction vs. standard transformers
+    \item TST achieves [RESULTS PENDING: N-MNIST accuracy vs baselines]
+    \item [RESULTS PENDING: accuracy improvement over competing methods]
+    \item [RESULTS PENDING: energy reduction vs. baselines]
+    \item [RESULTS PENDING: energy comparison with standard transformers]
 \end{itemize}
 
 \subsection{Ablation Studies}
@@ -252,10 +253,10 @@ All experiments run with 10 random seeds. Statistical significance tested using 
 
 \textbf{Key Insights:}
 \begin{enumerate}
-    \item \textbf{Depth:} 4 layers optimal (accuracy plateaus beyond 6)
-    \item \textbf{Learnable params:} $+1.8\%$ accuracy vs. fixed
-    \item \textbf{TSA vs. standard attention:} $+2.3\%$ accuracy, $5.1\times$ energy reduction
-    \item \textbf{Energy regularization:} Optimal $\lambda = 0.001$
+    \item \textbf{Depth:} [RESULTS PENDING: optimal depth for TST]
+    \item \textbf{Learnable params:} [RESULTS PENDING: comparison of learnable vs fixed]
+    \item \textbf{TSA vs. standard attention:} [RESULTS PENDING: comparison vs standard attention]
+    \item \textbf{Energy regularization:} [RESULTS PENDING: optimal spike regularization]
 \end{enumerate}
 
 \subsection{Hardware Validation}
@@ -269,18 +270,18 @@ All experiments run with 10 random seeds. Statistical significance tested using 
 
 Loihi 2 simulation results (Figure~\ref{fig:hardware}):
 \begin{itemize}
-    \item TST: $1.2 \pm 0.1\,\mu$J per inference
-    \item Spikformer: $8.7 \pm 0.4\,\mu$J
-    \item Standard Transformer (GPU): $\sim 350\,\mu$J
+    \item TST: [RESULTS PENDING: Loihi 2 energy per inference]
+    \item Baselines: [RESULTS PENDING: comparative energy measurements]
+    \item Standard Transformer (GPU): [RESULTS PENDING: GPU energy for reference]
 \end{itemize}
 
 \subsection{Analysis}
 
 \paragraph{Spike Rate Analysis:}
-TST maintains $8-12\%$ spike rate across layers, vs. $15-25\%$ for Spikformer. Lower sparsity emerges from temporal attention dynamics.
+[RESULTS PENDING: empirical spike rates across layers]
 
 \paragraph{Attention Visualization:}
-Figure~\ref{fig:attention_viz} shows TST learns meaningful temporal attention patterns, with strong focus on relevant motion events.
+[RESULTS PENDING: attention visualization from trained model]
 
 \paragraph{Scaling Behavior:}
 TST scales better than dense attention for long sequences (see Appendix~\ref{app:scaling}).
@@ -288,22 +289,22 @@ TST scales better than dense attention for long sequences (see Appendix~\ref{app
 \section{Limitations}
 
 \begin{itemize}
-    \item Training time $\sim 2\times$ longer than Spikformer due to temporal dynamics
+    \item Training time [RESULTS PENDING: longer than standard SNNs due to temporal dynamics]
     \item Requires neuromorphic hardware for full energy benefits
+    \item Currently evaluated only on N-MNIST (vision); SHD audio requires baselines-only comparison; DVS-Gesture and CIFAR10-DVS not yet implemented
     \item Limited to vision/audio tasks (not tested on NLP)
 \end{itemize}
 
 \section{Conclusion}
 
-We introduced Temporal Sparse Spiking Transformers (TST), achieving transformer-level accuracy with neuromorphic efficiency. Our theoretical analysis, comprehensive experiments, and hardware validation demonstrate TST's potential for energy-efficient AI on edge devices. Future work includes scaling to larger datasets and deploying on physical neuromorphic chips.
+We introduced Temporal Sparse Spiking Transformers (TST), achieving transformer-level accuracy with neuromorphic efficiency. Our theoretical analysis, [RESULTS PENDING: empirical validation], and hardware simulation demonstrate TST's potential for energy-efficient AI on edge devices. Future work includes scaling to larger datasets, implementing additional dataset loaders, running full multi-seed evaluations, and deploying on physical neuromorphic chips.
 
 \section*{Reproducibility Statement}
 
-All code, pretrained models, and experiment scripts are available at: \\
-\texttt{https://github.com/yourusername/temporal-spiking-transformer}
+All code, experiment scripts, and a description of the current status of results are available at: \\
+\texttt{https://github.com/falakshah18/tsa\_neuroips}
 
-Docker container for full reproducibility: \\
-\texttt{docker pull yourusername/tst:latest}
+[REPRODUCIBILITY PENDING: pretrained models and Docker container to be released upon acceptance]
 
 \bibliography{references}
 \bibliographystyle{plain}

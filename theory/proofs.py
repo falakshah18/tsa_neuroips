@@ -8,8 +8,16 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-def prove_convergence():
+def illustrate_convergence_bound():
     """
+    Illustrative plot of the O(1/√k) convergence bound from Theorem 2.
+    
+    NOTE: The loss curve plotted here is SYNTHETIC — generated as
+    loss = 10/sqrt(k) + random noise to visually match the theoretical
+    O(1/√k) bound. It is NOT a real training curve from any experiment.
+    This figure is intended only to illustrate the theoretical rate,
+    not to present empirical validation.
+    
     THEOREM 2 (Convergence of TSA Training):
     
     Under gradient descent with surrogate gradients, 
@@ -24,26 +32,26 @@ def prove_convergence():
     PROOF:
     """
     
-    # Empirical validation
+    # Synthetic data for illustration only — NOT empirical validation
     iterations = np.arange(1, 10000)
     learning_rate = 1.0 / np.sqrt(iterations)
     
-    # Simulate convergence
+    # NOTE: Synthetic curve, not from real experiments
     loss = 10.0 / np.sqrt(iterations) + 0.1 * np.random.randn(len(iterations))
     
     plt.figure(figsize=(10, 6))
-    plt.loglog(iterations, loss, label='Empirical Loss', alpha=0.7)
+    plt.loglog(iterations, loss, label='Synthetic Illustration', alpha=0.7)
     plt.loglog(iterations, 10.0/np.sqrt(iterations), 
                'r--', label='O(1/√k) bound', linewidth=2)
     plt.xlabel('Iteration', fontsize=14)
-    plt.ylabel('Loss', fontsize=14)
-    plt.title('Convergence Rate of TSA Training', fontsize=16)
+    plt.ylabel('Loss (synthetic)', fontsize=14)
+    plt.title('Illustrative O(1/√k) Convergence Bound (Synthetic Data — Not Empirical)', fontsize=16)
     plt.legend(fontsize=12)
     plt.grid(True, alpha=0.3)
     plt.savefig('convergence_proof.pdf', dpi=300, bbox_inches='tight')
 
 
-def prove_energy_bounds():
+def illustrate_energy_bounds():
     """
     THEOREM 3 (Energy Complexity Bounds):
     
@@ -97,7 +105,7 @@ def prove_energy_bounds():
     return energy_reduction
 
 
-def prove_complexity():
+def illustrate_complexity():
     """
     THEOREM 4 (Computational Complexity):
     
@@ -152,6 +160,6 @@ def prove_complexity():
 
 
 if __name__ == "__main__":
-    prove_convergence()
-    prove_energy_bounds()
-    prove_complexity()
+    illustrate_convergence_bound()
+    illustrate_energy_bounds()
+    illustrate_complexity()
