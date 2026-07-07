@@ -153,36 +153,6 @@ def check_environment():
 
 
 # ─────────────────────────────────────────────
-# Config Loader
-# ─────────────────────────────────────────────
-
-def load_configs() -> dict:
-    """Load all algorithm configs from yaml files."""
-    config_dir = Path(__file__).parent.parent / 'configs'
-    configs = {}
-
-    config_files = {
-        'Surrogate_Gradient': 'surrogate_grad_config.yaml',
-        'ANN_to_SNN': 'ann_to_snn_config.yaml',
-        'Supervised_STDP': 'stdp_config.yaml',
-        'E_prop': 'eprop_config.yaml',
-        'TTFS': 'ttfs_config.yaml',
-        'TSA_Ours': 'tsa_config.yaml',
-    }
-
-    for algo, filename in config_files.items():
-        config_path = config_dir / filename
-        if config_path.exists():
-            with open(config_path) as f:
-                configs[algo] = yaml.safe_load(f)
-        else:
-            print(f"  ⚠️  Config not found: {filename}")
-            configs[algo] = {}
-
-    return configs
-
-
-# ─────────────────────────────────────────────
 # Resume Support
 # ─────────────────────────────────────────────
 
@@ -349,10 +319,6 @@ def main():
 
     # Check environment
     check_environment()
-
-    # Load configs
-    configs = load_configs()
-    print(f"Loaded {len(configs)} algorithm configs")
 
     # Handle resume
     existing_results = None
