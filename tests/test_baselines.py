@@ -117,6 +117,7 @@ class TestBaselines:
         output, metrics = model(x)
         functional.reset_net(model)
         assert output.shape[1] == config['num_classes']
+
     def test_ann_to_snn(self):
         """Test ANN-to-SNN conversion pipeline (nmnist only — vision path)."""
         from baselines.ann_to_snn import get_ann_to_snn_model, ANNtoSNNConverter

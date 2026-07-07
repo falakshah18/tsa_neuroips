@@ -4,7 +4,7 @@ Experiments package
 """
 
 from .ablations import AblationFramework
-from .benchmarks import BaselineComparison
+from .baseline_comparison import BaselineComparison
 from .statistical_validation import StatisticalValidator
 
 __all__ = [

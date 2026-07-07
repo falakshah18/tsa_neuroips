@@ -42,7 +42,10 @@ def run_import_tests():
         import matplotlib
         import seaborn
         import yaml
-        import wandb
+        try:
+            import wandb
+        except ImportError:
+            wandb = None
         import scipy
         import sklearn
 

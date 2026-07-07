@@ -5,7 +5,6 @@ This is what separates good papers from great ones
 """
 
 from typing import Dict, List
-import itertools
 import torch
 from torch.utils.data import DataLoader
 from models.tst_v2 import TemporalSpikingTransformer, LearnableTSA
@@ -49,7 +48,7 @@ class StandardSpikeAttention(LearnableTSA):
             spike_rate_per_timestep.append(spikes / (B * H * N * C))
         metrics = {
             'total_spikes': total_spikes,
-            'avg_spike_rate': total_spikes / max(T * B * H * N * N, 1),
+            'avg_spike_rate': total_spikes / max(T * B * H * N * C, 1),
             'spike_rate_per_timestep': spike_rate_per_timestep,
             'learned_beta': [0.0] * H,
             'learned_theta': [1.0] * H,
@@ -98,8 +97,6 @@ def build_model_with_attention(attn_class, base_config: dict) -> nn.Module:
 
 def get_loaders_with_time_bins(n_bins: int, dataset: str = 'nmnist', batch_size: int = 32):
     """Create DataLoaders with a specific number of time bins."""
-    from tonic import datasets, transforms
-    from torch.utils.data import DataLoader, random_split
 
     if dataset == 'nmnist':
         sensor_size = (34, 34, 2)
@@ -118,14 +115,17 @@ def get_loaders_with_time_bins(n_bins: int, dataset: str = 'nmnist', batch_size:
     val_loader   = DataLoader(val_ds,   batch_size=batch_size, shuffle=False, num_workers=4)
     test_loader  = DataLoader(test_ds,  batch_size=batch_size, shuffle=False, num_workers=4)
     return train_loader, val_loader, test_loader
+
+
 class AblationFramework:
     """
     Systematic ablation study framework
     """
     
-    def __init__(self, base_config: dict, dataset_loaders: tuple):
+    def __init__(self, base_config: dict, dataset_loaders: tuple, dataset: str = 'nmnist'):
         self.base_config = base_config
         self.train_loader, self.val_loader, self.test_loader = dataset_loaders
+        self.dataset = dataset
         self.results = {}
     
     def ablate_depth(self) -> Dict:
@@ -257,7 +257,7 @@ class AblationFramework:
             print(f"\nTesting time_bins={n_bins}")
             
             # Recreate data loaders with new time bins
-            train_loader, val_loader, test_loader = get_loaders_with_time_bins(n_bins)
+            train_loader, val_loader, test_loader = get_loaders_with_time_bins(n_bins, dataset=self.dataset)
             
             model = TemporalSpikingTransformer(**self.base_config)
             

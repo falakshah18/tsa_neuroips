@@ -197,11 +197,12 @@ class ConvertedSNN(nn.Module):
         x = self.features(x)
         x = self.classifier(x)
 
-        # In SpikingJelly activation_based API (multi-step mode), the LIF node
-        # returns spike tensors through forward() — there is no .spike attribute.
-        # We track spikes directly from the output tensor x before mean-pooling.
-        # x at this point is [T, B, num_classes] — count non-zero entries.
-        total_spikes = (x > 0).float().sum().item()
+        # Count spikes across all LIF layers (multi-step mode: .spike has shape [T, B, ...])
+        total_spikes = sum(
+            m.spike.sum().item()
+            for m in self.modules()
+            if isinstance(m, neuron.LIFNode) and hasattr(m, 'spike') and m.spike is not None
+        )
 
         out = x.mean(0)
 

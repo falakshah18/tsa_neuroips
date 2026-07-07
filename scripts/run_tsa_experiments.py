@@ -38,7 +38,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models.tst_v2 import TemporalSpikingTransformer
 from training.trainer_v2 import AdvancedTrainer
 from experiments.ablations import AblationFramework
-from experiments.benchmarks import BaselineComparison
+from experiments.baseline_comparison import BaselineComparison
 from experiments.statistical_validation import StatisticalValidator
 from hardware.loihi2_deployment import LoihiSimulator
 from tonic import datasets, transforms
@@ -530,6 +530,7 @@ def run_ablations(
     ablation_framework = AblationFramework(
         base_config=base_config,
         dataset_loaders=(train_loader, val_loader, test_loader),
+        dataset=dataset,
     )
 
     print("\nRunning 6 ablation studies...")

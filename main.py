@@ -75,7 +75,7 @@ def parse_args():
     )
 
     parser.add_argument(
-                '--device',
+        '--device',
         type=str,
         default='cuda' if torch.cuda.is_available() else 'cpu',
         help='Device to use'

@@ -11,13 +11,14 @@ import torch.nn as nn
 from typing import Dict
 from torch.utils.data import DataLoader
 from models.tst_v2 import TemporalSpikingTransformer
+from spikingjelly.activation_based import neuron, functional
 try:
     import nxsdk
     from nxsdk.graph.nxboard import N2Board
     LOIHI_AVAILABLE = True
 except ImportError:
     LOIHI_AVAILABLE = False
-    print("⚠️ Loihi SDK not available. Using simulation mode.")
+    print("[WARNING] Loihi SDK not available. Using simulation mode.")
 
 
 class LoihiDeployer:
@@ -113,27 +114,36 @@ class LoihiSimulator:
         Simulate model execution on Loihi
         """
         model.eval()
+        device = next(model.parameters()).device
         
         total_energy = 0
         total_latency = 0
         total_accuracy = 0
         total_samples = 0
+        n_batches = 0
         
         with torch.no_grad():
             for data, target in dataloader:
                 if total_samples >= n_samples:
                     break
                 
-                data = data.to('cuda')
-                target = target.to('cuda')
+                data = data.to(device)
+                target = target.to(device)
+                
+                # Transpose from DataLoader's [B, T, ...] to model's [T, B, ...]
+                if data.dim() >= 3:
+                    data = data.transpose(0, 1).contiguous()
+                T = data.shape[0]
+                B = data.shape[1]
                 
                 # Count operations
                 neuron_ops = 0
                 spike_ops = 0
                 synapse_ops = 0
                 
-                # Forward pass
-                output = model(data)
+                # Forward pass (model returns (logits, metrics) tuple)
+                logits, _ = model(data)
+                output = logits
                 
                 # Count from recorded activity
                 for module in model.modules():
@@ -154,7 +164,6 @@ class LoihiSimulator:
                 )
                 
                 # Calculate latency (based on timesteps)
-                T = data.shape[0]  # Number of timesteps
                 latency = T * self.neuron_latency
                 
                 # Accuracy
@@ -164,14 +173,15 @@ class LoihiSimulator:
                 total_energy += energy
                 total_latency += latency
                 total_accuracy += acc.item()
-                total_samples += data.shape[1]
+                total_samples += B
+                n_batches += 1
                 
                 functional.reset_net(model)
         
         return {
-            'avg_energy_per_sample_uJ': (total_energy / total_samples) * 1e6,
-            'avg_latency_per_sample_ms': (total_latency / total_samples) * 1e3,
-            'accuracy': total_accuracy / (total_samples // data.shape[1]),
+            'avg_energy_per_sample_uJ': (total_energy / max(total_samples, 1)) * 1e6,
+            'avg_latency_per_sample_ms': (total_latency / max(total_samples, 1)) * 1e3,
+            'accuracy': total_accuracy / max(n_batches, 1),
             'total_samples': total_samples,
         }
 
@@ -191,7 +201,9 @@ def hardware_validation_report(
     if use_real_hardware and LOIHI_AVAILABLE:
         print("🔥 Running on Intel Loihi 2 chip...")
         deployer = LoihiDeployer(model)
-        results = deployer.run_inference(dataloader)
+        # Extract a sample batch and convert to numpy for the deployer
+        sample_data, _ = next(iter(dataloader))
+        results = deployer.run_inference(sample_data.cpu().numpy())
         hardware_type = "Loihi 2 (Real Hardware)"
     else:
         print("💻 Running simulation based on Loihi 2 specs...")
@@ -211,7 +223,9 @@ def hardware_validation_report(
     start = time.time()
     with torch.no_grad():
         for data, _ in dataloader:
-            _ = model(data.cuda())
+            if data.dim() >= 3:
+                data = data.transpose(0, 1).contiguous()
+            logits, _ = model(data)
             functional.reset_net(model)
             break
     gpu_time = time.time() - start

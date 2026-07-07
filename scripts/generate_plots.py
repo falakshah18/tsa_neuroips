@@ -147,7 +147,7 @@ def load_json(path: str) -> dict:
 def aggregate(seed_results: list) -> dict:
     valid = [r for r in seed_results if 'error' not in r]
     if not valid:
-        return {'mean': 0.0, 'std': 0.0, 'n': 0}
+        return {'acc_mean': 0.0, 'acc_std': 0.0, 'energy_mean': 0.0, 'energy_std': 0.0, 'n': 0}
     accs = [r.get('test_acc', 0.0) for r in valid]
     energies = [r.get('test_energy', 0.0) for r in valid]
     return {

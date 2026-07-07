@@ -1,6 +1,6 @@
 import re, os
 
-with open('repomix-output-fixed.xml', 'r', encoding='utf-8') as f:
+with open('repomix-output.xml', 'r', encoding='utf-8') as f:
     content = f.read()
 
 matches = re.findall(r'<file path="([^"]+)">\n(.*?)\n</file>', content, re.DOTALL)

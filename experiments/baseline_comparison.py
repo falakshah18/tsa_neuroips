@@ -324,7 +324,9 @@ class BaselineComparison:
             use_wandb=False,
         )
 
+        ann_train_start = time.time()
         train_result = trainer.train()
+        ann_train_time = time.time() - ann_train_start
 
         if dataset == 'shd':
             # get_ann_to_snn_model() returns snn_class=None for SHD -- there's
@@ -357,7 +359,7 @@ class BaselineComparison:
                 'test_acc': total_acc / total_samples,
                 'test_energy': 0.0,  # plain ANN, no spikes to count
                 'total_spikes': 0.0,
-                'train_time': train_result.get('train_time', 0),
+                'train_time': ann_train_time,
                 'best_val_acc': train_result.get('best_val_acc', 0),
             }
 
@@ -366,10 +368,11 @@ class BaselineComparison:
             percentile=config.get('conversion', {}).get('percentile', 99.9)
         )
 
+        ds_cfg = config.get(dataset, {})
         snn_kwargs = {
-            'in_channels': config.get('in_channels', 2),
-            'num_classes': config.get('num_classes', 10),
-            'img_size': config.get('img_size', 34),
+            'in_channels': ds_cfg.get('in_channels', 2),
+            'num_classes': ds_cfg.get('num_classes', 10),
+            'img_size': ds_cfg.get('img_size', 34),
             'T': config.get('conversion', {}).get('T_inference', 100),
         }
 
@@ -413,7 +416,7 @@ class BaselineComparison:
             'test_acc': total_acc / total_samples,
             'test_energy': (total_spikes / total_samples) * 0.1e-12,
             'total_spikes': total_spikes,
-            'train_time': train_result.get('train_time', 0),
+            'train_time': ann_train_time,
             'best_val_acc': train_result.get('best_val_acc', 0),
         }
 

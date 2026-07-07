@@ -84,13 +84,13 @@ class STDPLearningRule(nn.Module):
             # dW += A+ * post_t * pre_trace
             ltp = self.a_plus * torch.einsum(
                 'bo,bi->oi', post_t, pre_trace
-            ).mean(0)  # average over batch
+            ) / pre_t.shape[0]  # average over batch
 
             # LTD: pre spike, use post trace
             # dW -= A- * pre_t * post_trace
             ltd = self.a_minus * torch.einsum(
                 'bo,bi->oi', post_trace, pre_t
-            ).mean(0)
+            ) / pre_t.shape[0]
 
             dW += ltp - ltd
 

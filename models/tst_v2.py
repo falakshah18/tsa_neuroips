@@ -160,7 +160,7 @@ class LearnableTSA(nn.Module):
             attn_spikes = self.attn_drop(attn_spikes)
             
             out = torch.einsum('bhqk,bhkc->bhqc', attn_spikes, v[t])
-            output[t] = out.reshape(B, N, H * C)
+            output[t] = out.permute(0, 2, 1, 3).reshape(B, N, H * C)
         
         metrics = {
             'total_spikes': total_spikes,

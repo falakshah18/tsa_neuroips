@@ -6,13 +6,13 @@ This is what separates amateur from publication-ready work
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import torch
 from scipy import stats
 from scipy.stats import ttest_rel, wilcoxon, mannwhitneyu, friedmanchisquare
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Dict, List, Tuple
 import json
-from pathlib import Path
 
 class StatisticalValidator:
     """
@@ -57,6 +57,7 @@ class StatisticalValidator:
             model = model_fn()
             
             # Train
+            from training.trainer_v2 import AdvancedTrainer
             trainer = AdvancedTrainer(
                 model=model,
                 train_loader=train_loader,
@@ -72,7 +73,6 @@ class StatisticalValidator:
                 'seed': seed,
                 'test_acc': metrics['test_metrics']['acc'],
                 'test_energy': metrics['test_metrics']['avg_energy_uJ'],
-                'test_spikes': metrics['test_metrics']['avg_spikes'],
                 'best_val_acc': metrics['best_val_acc'],
             }
             results.append(result)
@@ -86,7 +86,7 @@ class StatisticalValidator:
         """
         Compute comprehensive statistics
         """
-        metrics = ['test_acc', 'test_energy', 'test_spikes']
+        metrics = ['test_acc', 'test_energy']
         stats_dict = {}
         
         for metric in metrics:
@@ -366,8 +366,8 @@ $^*$ indicates statistically significant improvement over baseline.}
             energy_mean = np.mean([r['test_energy'] for r in results])
             energy_std = np.std([r['test_energy'] for r in results], ddof=1)
             
-            spikes_mean = np.mean([r['test_spikes'] for r in results])
-            spikes_std = np.std([r['test_spikes'] for r in results], ddof=1)
+            spikes_mean = np.mean([r.get('test_spikes', 0) for r in results])
+            spikes_std = np.std([r.get('test_spikes', 0) for r in results], ddof=1)
             
             # Find p-value compared to baseline (assuming first method is baseline)
             baseline_method = method_names[0]

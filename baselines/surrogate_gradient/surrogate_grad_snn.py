@@ -164,7 +164,7 @@ class SurrogateGradSNN_SHD(nn.Module):
         total_spikes = sum(
             m.spike.sum().item()
             for m in self.modules()
-            if isinstance(m, neuron.LIFNode) and hasattr(m, 'spike')
+            if isinstance(m, neuron.LIFNode) and hasattr(m, 'spike') and m.spike is not None
         )
 
         out = x.mean(0)
