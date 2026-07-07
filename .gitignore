@@ -122,6 +122,13 @@ pretrained_models/
 *.h5
 *.hdf5
 
+# Test artifacts
+test_checkpoints/
+test_logs/
+
+# Repomix output
+repomix-output.xml
+
 # Results directories
 results/
 baseline_comparison_results/

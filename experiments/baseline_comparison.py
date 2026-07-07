@@ -267,16 +267,18 @@ class BaselineComparison:
             return get_ttfs_model(dataset, config)
 
         elif algorithm == 'tsa':
+            # Model hyperparams are at algo_config level (not inside dataset section)
+            model_cfg = self.configs.get(algorithm, {}).get('model', {})
             return TemporalSpikingTransformer(
                 img_size=config.get('img_size', 34),
                 patch_size=config.get('patch_size', 2),
                 in_channels=config.get('in_channels', 2),
                 num_classes=config.get('num_classes', 10),
-                embed_dim=config.get('model', {}).get('embed_dim', 256),
-                depth=config.get('model', {}).get('depth', 4),
-                num_heads=config.get('model', {}).get('num_heads', 8),
-                mlp_ratio=config.get('model', {}).get('mlp_ratio', 4.0),
-                init_tau=config.get('model', {}).get('init_tau', 2.0),
+                embed_dim=model_cfg.get('embed_dim', 256),
+                depth=model_cfg.get('depth', 4),
+                num_heads=model_cfg.get('num_heads', 8),
+                mlp_ratio=model_cfg.get('mlp_ratio', 4.0),
+                init_tau=model_cfg.get('init_tau', 2.0),
             )
 
         else:
