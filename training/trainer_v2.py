@@ -66,6 +66,7 @@ DEFAULT_CONFIG = {
     'project_name': 'TSA_NEUROIPS',
     'run_name': 'run',
     'save_every': 10,
+    'use_compile': False,
 }
 
 
@@ -108,6 +109,14 @@ class AdvancedTrainer:
 
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = model.to(self.device)
+
+        use_compile = self.config.get('use_compile', False)
+        if use_compile and hasattr(torch, 'compile'):
+            try:
+                self.model = torch.compile(self.model)
+                print(f"[AdvancedTrainer] Model compiled with torch.compile")
+            except Exception as e:
+                print(f"[AdvancedTrainer] torch.compile failed ({e}); continuing without it")
 
         self.train_loader = train_loader
         self.val_loader = val_loader

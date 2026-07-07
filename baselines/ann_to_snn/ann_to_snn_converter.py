@@ -14,7 +14,7 @@ Reference:
 import torch
 import torch.nn as nn
 from spikingjelly.activation_based import neuron, surrogate, layer, functional
-from typing import Tuple, Dict
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 

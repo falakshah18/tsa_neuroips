@@ -1,5 +1,12 @@
 # TSA — Temporal Spiking Attention
 
+[![CI](https://github.com/falakshah18/tsa_neuroips/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/falakshah18/tsa_neuroips/actions/workflows/ci-tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org)
+[![SpikingJelly](https://img.shields.io/badge/spikingjelly-0.0.0.0.14+-green.svg)](https://github.com/fangwei123456/spikingjelly)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](pyproject.toml)
+
 A biologically-plausible spiking neural network with learnable temporal attention, targeting a NeurIPS submission on neuromorphic computing.
 
 TSA replaces the standard softmax attention mechanism used in transformers with a spiking-neuron-based attention rule: instead of computing continuous attention weights, per-head leaky integrate-and-fire (LIF) neurons build up membrane potential from query/key coincidence over time and only "attend" when they spike. The neurons' own decay rate (`tau`), firing threshold, and temperature are learned during training rather than fixed.

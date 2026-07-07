@@ -8,7 +8,7 @@ This is GOLD for top-tier publications
 # If you don't have access, use simulation (see next section)
 import numpy as np
 import torch.nn as nn
-from typing import Dict
+from typing import Any, Dict, List, Optional, Tuple
 from torch.utils.data import DataLoader
 from models.tst_v2 import TemporalSpikingTransformer
 from spikingjelly.activation_based import neuron, functional

@@ -43,7 +43,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from spikingjelly.activation_based import neuron, surrogate, layer, functional
-from typing import Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ class LearnableTSA(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
         self.proj_neuron = neuron.ParametricLIFNode(init_tau=init_tau, surrogate_function=surrogate.ATan(), detach_reset=True)
         
-    def compute_spike_attention(self, q, k, v, T):
+    def compute_spike_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, T: int) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """
         Run the leaky-integrate-and-fire attention dynamics over T timesteps.
 
@@ -168,7 +168,7 @@ class LearnableTSA(nn.Module):
         }
         return output, metrics
     
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """
         Args:
             x: [T, B, N, dim] input sequence.
@@ -210,8 +210,18 @@ class TSABlock(nn.Module):
             docstring for details.
     """
 
-    def __init__(self, dim, num_heads, mlp_ratio=4.0, qkv_bias=True, drop=0.0, attn_drop=0.0, init_tau=2.0,
-                 learnable_tau=True, learnable_threshold=True):
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int = 8,
+        mlp_ratio: float = 4.0,
+        qkv_bias: bool = True,
+        drop: float = 0.0,
+        attn_drop: float = 0.0,
+        init_tau: float = 2.0,
+        learnable_tau: bool = True,
+        learnable_threshold: bool = True,
+    ):
         super().__init__()
         self.norm1 = nn.LayerNorm(dim)
         self.attn = LearnableTSA(dim, num_heads, qkv_bias, attn_drop, drop, init_tau,
@@ -227,7 +237,7 @@ class TSABlock(nn.Module):
             layer.Dropout(drop),
         )
         
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """
         Args:
             x: [T, B, N, dim] input sequence.
@@ -275,20 +285,20 @@ class TemporalSpikingTransformer(nn.Module):
 
     def __init__(
         self,
-        img_size=34,
-        patch_size=2,
-        in_channels=2,
-        num_classes=10,
-        embed_dim=256,
-        depth=4,
-        num_heads=8,
-        mlp_ratio=4.0,
-        qkv_bias=True,
-        drop_rate=0.0,
-        attn_drop_rate=0.0,
-        init_tau=2.0,
-        learnable_tau=True,
-        learnable_threshold=True,
+        img_size: int = 34,
+        patch_size: int = 2,
+        in_channels: int = 2,
+        num_classes: int = 10,
+        embed_dim: int = 256,
+        depth: int = 4,
+        num_heads: int = 8,
+        mlp_ratio: float = 4.0,
+        qkv_bias: bool = True,
+        drop_rate: float = 0.0,
+        attn_drop_rate: float = 0.0,
+        init_tau: float = 2.0,
+        learnable_tau: bool = True,
+        learnable_threshold: bool = True,
     ):
         super().__init__()
         self.num_classes = num_classes
@@ -320,7 +330,7 @@ class TemporalSpikingTransformer(nn.Module):
         
         functional.set_step_mode(self, 'm')
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """
         Args:
             x: [T, B, C, H, W] input event frames (T timesteps).
@@ -352,7 +362,7 @@ class TemporalSpikingTransformer(nn.Module):
         return x, {'blocks': all_metrics}
     
     @torch.no_grad()
-    def get_energy_breakdown(self, x: torch.Tensor) -> dict:
+    def get_energy_breakdown(self, x: torch.Tensor) -> Dict[str, float]:
         """
         Estimate inference energy from total spike count.
 
