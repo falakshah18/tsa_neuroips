@@ -31,7 +31,7 @@
 \maketitle
 
 \begin{abstract}
-We present Temporal Sparse Spiking Transformers (TST), a novel neuromorphic architecture that achieves transformer-level accuracy with event-driven energy efficiency. Our key innovations include: (1) a spike-based temporal attention mechanism with provable $O(N)$ expected complexity, (2) learnable membrane dynamics that approximate softmax attention with bounded error, and (3) hardware-validated energy consumption $<1\%$ of standard transformers. On N-MNIST, TST achieves [RESULTS PENDING: multi-seed N-MNIST evaluation] mean accuracy with [RESULTS PENDING: N-MNIST energy measurement] energy per sample, outperforming prior spiking methods by [RESULTS PENDING: comparison vs baselines] while reducing energy by [RESULTS PENDING: hardware validation] (statistical significance [RESULTS PENDING]). We provide theoretical analysis, comprehensive ablations, and open-source implementation.
+We present Temporal Sparse Spiking Transformers (TST), a novel neuromorphic architecture that achieves transformer-level accuracy with event-driven energy efficiency. Our key innovations include: (1) a spike-based temporal attention mechanism with provable $O(N)$ expected complexity, (2) learnable membrane dynamics that approximate softmax attention with bounded error, and (3) theoretical energy bounds showing $<1\%$ energy relative to standard transformers (validation [RESULTS PENDING]). On N-MNIST, TST achieves [RESULTS PENDING: multi-seed N-MNIST evaluation] mean accuracy with [RESULTS PENDING: N-MNIST energy measurement] energy per sample; comparison to prior spiking methods and energy reduction factors are [RESULTS PENDING]. We provide theoretical analysis, comprehensive ablations, and open-source implementation.
 \end{abstract}
 
 \section{Introduction}
@@ -62,7 +62,7 @@ Transformers have revolutionized deep learning \cite{vaswani2017attention}, but 
     
     \item \textbf{Hardware:} Loihi 2 simulation showing [RESULTS PENDING: hardware validation] energy per inference, [RESULTS PENDING: energy reduction] vs. baselines.
     
-    \item \textbf{Reproducibility:} Open-source code, pretrained models, and comprehensive ablations.
+    \item \textbf{Reproducibility:} Open-source code and [RESULTS PENDING: pretrained models and comprehensive ablations].
 \end{itemize}
 
 \section{Related Work}
@@ -75,7 +75,7 @@ Recent works explore attention in SNNs:
 \begin{itemize}
     \item \textbf{Spikformer} \cite{zhou2023spikformer}: Applies vanilla attention with spiking neurons. Limitation: Uses dense operations, high energy.
     \item \textbf{Spike-driven Transformer} \cite{yao2023spike}: Event-driven queries. Limitation: Lacks theoretical analysis.
-    \item \textbf{Our TST}: Temporal attention with provable properties and hardware validation.
+    \item \textbf{Our TST}: Temporal attention with provable properties and [RESULTS PENDING: hardware validation].
 \end{itemize}
 
 \subsection{Efficient Transformers}
@@ -259,12 +259,12 @@ All experiments run with [RESULTS PENDING: N] random seeds. Statistical signific
     \item \textbf{Energy regularization:} [RESULTS PENDING: optimal spike regularization]
 \end{enumerate}
 
-\subsection{Hardware Validation}
+\subsection{Hardware Simulation}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.8\linewidth]{figures/hardware_validation.pdf}
-\caption{Energy consumption on Loihi 2 (simulated based on published specs).}
+\caption{Estimated energy consumption on Loihi 2 based on published hardware specs. [RESULTS PENDING: hardware validation].}
 \label{fig:hardware}
 \end{figure}
 
@@ -284,7 +284,7 @@ Loihi 2 simulation results (Figure~\ref{fig:hardware}):
 [RESULTS PENDING: attention visualization from trained model]
 
 \paragraph{Scaling Behavior:}
-TST scales better than dense attention for long sequences (see Appendix~\ref{app:scaling}).
+[RESULTS PENDING: empirical scaling analysis for long sequences]
 
 \section{Limitations}
 
