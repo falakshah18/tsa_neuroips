@@ -267,12 +267,11 @@ class BaselineComparison:
             return get_ttfs_model(dataset, config)
 
         elif algorithm == 'tsa':
-            ds_config = config.get(dataset, {})
             return TemporalSpikingTransformer(
-                img_size=ds_config.get('img_size', 34),
-                patch_size=ds_config.get('patch_size', 2),
-                in_channels=ds_config.get('in_channels', 2),
-                num_classes=ds_config.get('num_classes', 10),
+                img_size=config.get('img_size', 34),
+                patch_size=config.get('patch_size', 2),
+                in_channels=config.get('in_channels', 2),
+                num_classes=config.get('num_classes', 10),
                 embed_dim=config.get('model', {}).get('embed_dim', 256),
                 depth=config.get('model', {}).get('depth', 4),
                 num_heads=config.get('model', {}).get('num_heads', 8),

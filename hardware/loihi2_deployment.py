@@ -203,7 +203,15 @@ def hardware_validation_report(
         deployer = LoihiDeployer(model)
         # Extract a sample batch and convert to numpy for the deployer
         sample_data, _ = next(iter(dataloader))
-        results = deployer.run_inference(sample_data.cpu().numpy())
+        if sample_data.dim() >= 3:
+            sample_data = sample_data.transpose(0, 1).contiguous()
+        raw = deployer.run_inference(sample_data.cpu().numpy())
+        # Normalize dict keys to match simulate_execution output
+        results = {
+            'avg_energy_per_sample_uJ': raw['energy_uJ'] / sample_data.shape[1],
+            'avg_latency_per_sample_ms': raw['latency_ms'],
+            'accuracy': 0.0,  # Real hardware path doesn't compute accuracy
+        }
         hardware_type = "Loihi 2 (Real Hardware)"
     else:
         print("💻 Running simulation based on Loihi 2 specs...")

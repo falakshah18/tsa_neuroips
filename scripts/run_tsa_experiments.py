@@ -530,7 +530,7 @@ def run_ablations(
     ablation_framework = AblationFramework(
         base_config=base_config,
         dataset_loaders=(train_loader, val_loader, test_loader),
-        dataset=dataset,
+        dataset='nmnist',
     )
 
     print("\nRunning 6 ablation studies...")
