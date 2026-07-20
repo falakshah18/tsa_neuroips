@@ -295,7 +295,7 @@ class SupervisedSTDP(nn.Module):
         metrics = {
             'total_spikes': total_spikes,
             'avg_spike_rate': total_spikes / (self.T * x.shape[1]),
-            'avg_energy_uJ': total_spikes * 0.1e-12,
+            'avg_energy_uJ': total_spikes * 0.1e-6,
             'layer_spike_rates': {
                 'layer1': h1.mean().item(),
                 'layer2': h2.mean().item(),
@@ -442,7 +442,7 @@ class SupervisedSTDP_Vision(nn.Module):
         metrics = {
             'total_spikes': total_spikes,
             'avg_spike_rate': total_spikes / (self.T * x.shape[1]),
-            'avg_energy_uJ': total_spikes * 0.1e-12,
+            'avg_energy_uJ': total_spikes * 0.1e-6,
         }
 
         return logits, metrics

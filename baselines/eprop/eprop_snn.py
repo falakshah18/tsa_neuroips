@@ -96,11 +96,8 @@ class EligibilityTrace(nn.Module):
             pre_spike
         )
 
-        # Average over batch, update trace
-        self.trace = (
-            self.kappa * self.trace +
-            correlation.mean(0)
-        )
+        # Average over batch, update trace in-place to preserve buffer registration
+        self.trace.mul_(self.kappa).add_(correlation.mean(0))
 
         return self.trace
 
@@ -417,7 +414,7 @@ class EpropSNN(base.MemoryModule):
         metrics = {
             'total_spikes': total_spikes,
             'avg_spike_rate': total_spikes / (T * B),
-            'avg_energy_uJ': total_spikes * 0.1e-12,
+            'avg_energy_uJ': total_spikes * 0.1e-6,
             'layer_spike_rates': {
                 k: float(np.mean(v))
                 for k, v in spike_rates.items()
@@ -540,7 +537,7 @@ class EpropSNN_Vision(base.MemoryModule):
         metrics = {
             'total_spikes': total_spikes,
             'avg_spike_rate': total_spikes / (T * B),
-            'avg_energy_uJ': total_spikes * 0.1e-12,
+            'avg_energy_uJ': total_spikes * 0.1e-6,
         }
 
         return logits, metrics

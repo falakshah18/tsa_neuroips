@@ -7,6 +7,7 @@ This is GOLD for top-tier publications
 # Note: This requires Intel Loihi access through INRC
 # If you don't have access, use simulation (see next section)
 import numpy as np
+import torch
 import torch.nn as nn
 from typing import Any, Dict, List, Optional, Tuple
 from torch.utils.data import DataLoader

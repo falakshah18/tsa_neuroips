@@ -65,21 +65,21 @@ def setup_style():
 
 # Color palette (colorblind-friendly)
 COLORS = {
-    'Surrogate_Gradient': '#1f77b4',   # blue
-    'ANN_to_SNN': '#ff7f0e',           # orange
-    'Supervised_STDP': '#2ca02c',      # green
-    'E_prop': '#d62728',               # red
-    'TTFS': '#9467bd',                 # purple
-    'TSA_Ours': '#e377c2',             # pink (highlight)
+    'surrogate_gradient': '#1f77b4',   # blue
+    'ann_to_snn': '#ff7f0e',           # orange
+    'stdp': '#2ca02c',                 # green
+    'eprop': '#d62728',                # red
+    'ttfs': '#9467bd',                 # purple
+    'tsa': '#e377c2',                  # pink (highlight)
 }
 
 ALGO_LABELS = {
-    'Surrogate_Gradient': 'Surrogate\nGradient',
-    'ANN_to_SNN': 'ANN-to-SNN',
-    'Supervised_STDP': 'Sup. STDP',
-    'E_prop': 'E-prop',
-    'TTFS': 'TTFS',
-    'TSA_Ours': 'TSA\n(Ours)',
+    'surrogate_gradient': 'Surrogate\nGradient',
+    'ann_to_snn': 'ANN-to-SNN',
+    'stdp': 'Sup. STDP',
+    'eprop': 'E-prop',
+    'ttfs': 'TTFS',
+    'tsa': 'TSA\n(Ours)',
 }
 
 
@@ -166,12 +166,12 @@ def placeholder_data() -> dict:
     Replace with real results after training.
     """
     return {
-        'Surrogate_Gradient': {'acc_mean': 0.921, 'acc_std': 0.008, 'energy_mean': 2.4, 'energy_std': 0.3},
-        'ANN_to_SNN': {'acc_mean': 0.903, 'acc_std': 0.012, 'energy_mean': 3.1, 'energy_std': 0.4},
-        'Supervised_STDP': {'acc_mean': 0.876, 'acc_std': 0.015, 'energy_mean': 1.8, 'energy_std': 0.2},
-        'E_prop': {'acc_mean': 0.891, 'acc_std': 0.011, 'energy_mean': 2.0, 'energy_std': 0.3},
-        'TTFS': {'acc_mean': 0.882, 'acc_std': 0.013, 'energy_mean': 0.9, 'energy_std': 0.1},
-        'TSA_Ours': {'acc_mean': 0.951, 'acc_std': 0.005, 'energy_mean': 1.2, 'energy_std': 0.1},
+        'surrogate_gradient': {'acc_mean': 0.921, 'acc_std': 0.008, 'energy_mean': 2.4, 'energy_std': 0.3},
+        'ann_to_snn': {'acc_mean': 0.903, 'acc_std': 0.012, 'energy_mean': 3.1, 'energy_std': 0.4},
+        'stdp': {'acc_mean': 0.876, 'acc_std': 0.015, 'energy_mean': 1.8, 'energy_std': 0.2},
+        'eprop': {'acc_mean': 0.891, 'acc_std': 0.011, 'energy_mean': 2.0, 'energy_std': 0.3},
+        'ttfs': {'acc_mean': 0.882, 'acc_std': 0.013, 'energy_mean': 0.9, 'energy_std': 0.1},
+        'tsa': {'acc_mean': 0.951, 'acc_std': 0.005, 'energy_mean': 1.2, 'energy_std': 0.1},
     }
 
 
@@ -237,7 +237,7 @@ def plot_algorithm_comparison(
         )
 
         # Highlight TSA bar
-        tsa_idx = algos.index('TSA_Ours')
+        tsa_idx = algos.index('tsa')
         bars[tsa_idx].set_edgecolor('black')
         bars[tsa_idx].set_linewidth(2.0)
 
@@ -382,12 +382,12 @@ def plot_convergence_curves(output_dir: Path):
         return np.clip(curve, 0, 1)
 
     curves = {
-        'Surrogate_Gradient': convergence_curve(0.921, 3.0, seed=0),
-        'ANN_to_SNN': convergence_curve(0.903, 2.0, seed=1),
-        'Supervised_STDP': convergence_curve(0.876, 1.5, seed=2),
-        'E_prop': convergence_curve(0.891, 2.5, seed=3),
-        'TTFS': convergence_curve(0.882, 2.0, seed=4),
-        'TSA_Ours': convergence_curve(0.951, 4.0, seed=5),
+        'surrogate_gradient': convergence_curve(0.921, 3.0, seed=0),
+        'ann_to_snn': convergence_curve(0.903, 2.0, seed=1),
+        'stdp': convergence_curve(0.876, 1.5, seed=2),
+        'eprop': convergence_curve(0.891, 2.5, seed=3),
+        'ttfs': convergence_curve(0.882, 2.0, seed=4),
+        'tsa': convergence_curve(0.951, 4.0, seed=5),
     }
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -395,8 +395,8 @@ def plot_convergence_curves(output_dir: Path):
     # Left: all curves
     ax = axes[0]
     for algo, curve in curves.items():
-        lw = 2.5 if algo == 'TSA_Ours' else 1.5
-        ls = '-' if algo == 'TSA_Ours' else '--'
+        lw = 2.5 if algo == 'tsa' else 1.5
+        ls = '-' if algo == 'tsa' else '--'
         ax.plot(
             epochs, curve * 100,
             color=COLORS[algo],
@@ -435,7 +435,7 @@ def plot_convergence_curves(output_dir: Path):
     )
 
     # Highlight TSA
-    tsa_idx = algos.index('TSA_Ours')
+    tsa_idx = algos.index('tsa')
     bars[tsa_idx].set_linewidth(2.0)
 
     for bar, val in zip(bars, epochs_to_conv):
@@ -501,7 +501,7 @@ def plot_energy_comparison(
                 acc_std = ph['acc_std'] * 100
                 energy_std = ph['energy_std']
 
-            is_ours = algo == 'TSA_Ours'
+            is_ours = algo == 'tsa'
             marker = '*' if is_ours else 'o'
             size = 200 if is_ours else 100
             zorder = 5 if is_ours else 3

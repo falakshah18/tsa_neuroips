@@ -19,6 +19,7 @@ from baselines.stdp import get_stdp_model
 from baselines.eprop import get_eprop_model
 from baselines.temporal_coding import get_ttfs_model
 from models.tst_v2 import TemporalSpikingTransformer
+from utils.reproducibility import set_seed
 
 # Dataset imports
 from tonic import datasets, transforms
@@ -130,18 +131,29 @@ class BaselineComparison:
         n = min(n, len(dataset))
         return Subset(dataset, list(range(n)))
 
+    # Map canonical algorithm names to their config file stem
+    # (file names don't always match canonical identifiers).
+    _CONFIG_FILE_MAP = {
+        'surrogate_gradient': 'surrogate_grad',
+        'ann_to_snn': 'ann_to_snn',
+        'stdp': 'stdp',
+        'eprop': 'eprop',
+        'ttfs': 'ttfs',
+        'tsa': 'tsa',
+    }
+
     def _load_configs(self) -> dict:
-        """Load algorithm configs."""
+        """Load algorithm configs, keyed by canonical algorithm name."""
         config_dir = Path(__file__).parent.parent / 'configs'
         configs = {}
 
-        for algo in ['surrogate_grad', 'ann_to_snn', 'stdp', 'eprop', 'ttfs', 'tsa']:
-            config_path = config_dir / f'{algo}_config.yaml'
+        for canonical, file_stem in self._CONFIG_FILE_MAP.items():
+            config_path = config_dir / f'{file_stem}_config.yaml'
             if config_path.exists():
                 with open(config_path) as f:
-                    configs[algo] = yaml.safe_load(f)
+                    configs[canonical] = yaml.safe_load(f)
             else:
-                configs[algo] = {}
+                configs[canonical] = {}
 
         return configs
 
@@ -415,7 +427,7 @@ class BaselineComparison:
 
         return {
             'test_acc': total_acc / total_samples,
-            'test_energy': (total_spikes / total_samples) * 0.1e-12,
+            'test_energy': (total_spikes / total_samples) * 0.1e-6,  # 0.1 pJ/spike → μJ
             'total_spikes': total_spikes,
             'train_time': ann_train_time,
             'best_val_acc': train_result.get('best_val_acc', 0),
@@ -430,11 +442,8 @@ class BaselineComparison:
         """Run a single seed experiment."""
         print(f"  Running {algorithm} on {dataset}, seed {seed}")
 
-        # Set seeds
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
+        # Set seeds (includes cudnn.deterministic + use_deterministic_algorithms)
+        set_seed(seed)
 
         # Get config
         algo_config = self.configs.get(algorithm, {})

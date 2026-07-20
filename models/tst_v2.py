@@ -249,7 +249,9 @@ class TSABlock(nn.Module):
         attn_out, attn_metrics = self.attn(x)
         x = self.norm1(x + attn_out)
         x = self.norm2(x + self.mlp(x))
-        return x, {'attention': attn_metrics}
+        # attn_metrics is already {'attention': {'total_spikes': ..., ...}}
+        # from LearnableTSA.forward; do NOT re-wrap.
+        return x, attn_metrics
 
 
 class TemporalSpikingTransformer(nn.Module):

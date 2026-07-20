@@ -159,23 +159,25 @@ def generate_algorithm_comparison(
     """
     print("\nGenerating Table 1: Algorithm Comparison...")
 
-    # Algorithm display names and ordering
+    # Algorithm display names and ordering.
+    # Keys MUST match the canonical names written to JSON by
+    # BaselineComparison._run_seed() → self.results[dataset][algorithm].
     algo_display = {
-        'Surrogate_Gradient': 'Surrogate Gradient',
-        'ANN_to_SNN': 'ANN-to-SNN Conv.',
-        'Supervised_STDP': 'Supervised STDP',
-        'E_prop': 'E-prop',
-        'TTFS': 'TTFS Coding',
-        'TSA_Ours': r'\textbf{TSA (Ours)}',
+        'surrogate_gradient': 'Surrogate Gradient',
+        'ann_to_snn': 'ANN-to-SNN Conv.',
+        'stdp': 'Supervised STDP',
+        'eprop': 'E-prop',
+        'ttfs': 'TTFS Coding',
+        'tsa': r'\textbf{TSA (Ours)}',
     }
 
     bio_scores = {
-        'Surrogate_Gradient': 2,
-        'ANN_to_SNN': 2,
-        'Supervised_STDP': 4,
-        'E_prop': 4,
-        'TTFS': 3,
-        'TSA_Ours': 3,
+        'surrogate_gradient': 2,
+        'ann_to_snn': 2,
+        'stdp': 4,
+        'eprop': 4,
+        'ttfs': 3,
+        'tsa': 3,
     }
 
     # Collect stats per algorithm per dataset
@@ -197,14 +199,17 @@ def generate_algorithm_comparison(
                     'n_seeds': 0,
                 }
 
-    # Find best accuracy per dataset
+    # Find best accuracy per dataset and max seed count
     best_acc = {}
+    max_n_seeds = 0
     for dataset in datasets:
         accs = {
             algo: stats[dataset][algo]['acc_mean']
             for algo in algo_display.keys()
         }
         best_acc[dataset] = max(accs.values())
+        for algo in algo_display.keys():
+            max_n_seeds = max(max_n_seeds, stats[dataset][algo].get('n_seeds', 0))
 
     # Build LaTeX
     col_spec = 'l' + 'c' * (len(datasets) * 2) + 'cc'
@@ -217,11 +222,12 @@ def generate_algorithm_comparison(
         for _ in datasets
     ])
 
+    seed_label = str(max_n_seeds) if max_n_seeds > 0 else "N"
     latex = r"""\begin{table*}[t]
 \centering
 \caption{
     Comparison of neuromorphic learning algorithms.
-    Results reported as mean$\pm$std over """ + "3" + r""" random seeds.
+    Results reported as mean$\pm$std over """ + seed_label + r""" random seeds.
     Energy estimated using Loihi 2 specifications
     \cite{davies2021loihi2}.
     Bio Score: biological plausibility out of 5
@@ -244,7 +250,7 @@ def generate_algorithm_comparison(
 
     for algo, display_name in algo_display.items():
 
-        if algo == 'TSA_Ours':
+        if algo == 'tsa':
             latex += r"\midrule" + "\n"
 
         row = f"{display_name}"
@@ -352,8 +358,8 @@ def generate_bio_plausibility_table(
 \centering
 \caption{
     Biological plausibility scoring rubric.
-    \cmark~= criterion satisfied,
-    \xmark~= criterion not satisfied.
+    \checkmark~= criterion satisfied,
+    $\times$~= criterion not satisfied.
     Score = number of satisfied criteria (out of 5).
 }
 \label{tab:bio_rubric}
@@ -376,7 +382,7 @@ def generate_bio_plausibility_table(
         row = f"{algo}"
         for key in criteria_display.keys():
             val = criteria[key]
-            mark = r"\cmark" if val else r"\xmark"
+            mark = r"\checkmark" if val else r"$\times$"
             row += f" & {mark}"
 
         row += f" & {total}/5"
@@ -386,10 +392,6 @@ def generate_bio_plausibility_table(
 \end{tabular}
 \end{table}
 """
-
-    # Note: needs \usepackage{pifont} and
-    # \newcommand{\cmark}{\ding{51}}
-    # \newcommand{\xmark}{\ding{55}}
 
     output_path = output_dir / 'bio_plausibility_rubric.tex'
     with open(output_path, 'w') as f:
@@ -415,13 +417,22 @@ def generate_main_results_table(
     """
     print("\nGenerating Table 3: TSA Main Results...")
 
+    # Compute max seed count from available data
+    max_seeds = 0
+    for ds in datasets:
+        for key in ['surrogate_gradient', 'tsa']:
+            results_list = baseline_results.get(ds, {}).get(key, [])
+            if isinstance(results_list, list):
+                max_seeds = max(max_seeds, len([r for r in results_list if 'error' not in r]))
+    seed_label = str(max_seeds) if max_seeds > 0 else "N"
+
     # Methods to include
     methods = {
         'Spikformer': None,      # from literature
         'DIET-SNN': None,        # from literature
         'TET': None,             # from literature
-        'Surrogate_Gradient': baseline_results,
-        'TSA_Ours': baseline_results,
+        'surrogate_gradient': baseline_results,
+        'tsa': baseline_results,
     }
 
     # Literature results (from papers)
@@ -457,7 +468,7 @@ def generate_main_results_table(
 \caption{
     TSA vs state-of-the-art spiking transformers.
     $\dagger$ = results from original papers.
-    Results over """ + "3" + r""" seeds (mean$\pm$std).
+    Results over """ + seed_label + r""" seeds (mean$\pm$std).
     \textbf{Bold} = best result.
 }
 \label{tab:main_results}
@@ -502,8 +513,8 @@ def generate_main_results_table(
     latex += r"\multicolumn{" + str(1 + 2*len(datasets)) + r"}{l}{\textit{This Work}} \\" + "\n"
 
     for algo, display in [
-        ('Surrogate_Gradient', 'Surrogate Gradient (baseline)'),
-        ('TSA_Ours', r'\textbf{TSA (Ours)}'),
+        ('surrogate_gradient', 'Surrogate Gradient (baseline)'),
+        ('tsa', r'\textbf{TSA (Ours)}'),
     ]:
         row = display
         for ds in datasets:
@@ -605,7 +616,7 @@ def generate_ablation_table(
     latex = r"""\begin{table}[t]
 \centering
 \caption{
-    TSA ablation study on N-MNIST (3 seeds, mean$\pm$std).
+    TSA ablation study on N-MNIST (mean$\pm$std).
     Default config marked with $\star$.
 }
 \label{tab:ablation}

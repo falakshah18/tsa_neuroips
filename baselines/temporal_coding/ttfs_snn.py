@@ -428,7 +428,7 @@ class TTFSNetwork(base.MemoryModule):
         metrics = {
             'total_spikes': total_spikes,
             'avg_spike_rate': total_spikes / max(max_possible, 1),
-            'avg_energy_uJ': total_spikes * 0.1e-12,
+            'avg_energy_uJ': total_spikes * 0.1e-6,
             'sparsity': 1.0 - (total_spikes / max(max_possible, 1)),
             'layer_spike_counts': {
                 'layer1': spikes1.sum().item(),
@@ -557,7 +557,7 @@ class TTFSNetwork_Vision(base.MemoryModule):
             'avg_spike_rate': total_spikes / max(
                 B * (spikes1.shape[2] + spikes2.shape[2] + spikes3.shape[2]), 1
             ),
-            'avg_energy_uJ': total_spikes * 0.1e-12,
+            'avg_energy_uJ': total_spikes * 0.1e-6,
             'sparsity': 1.0 - total_spikes / max(
                 B * (spikes1.shape[2] + spikes2.shape[2] + spikes3.shape[2]), 1
             ),

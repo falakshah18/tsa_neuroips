@@ -35,6 +35,8 @@ from typing import Dict, List
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
+from utils.reproducibility import set_seed
+
 from models.tst_v2 import TemporalSpikingTransformer
 from training.trainer_v2 import AdvancedTrainer
 from experiments.ablations import AblationFramework
@@ -375,18 +377,15 @@ def run_training(
             print(f"\n  Seed {seed + 1}/{n_seeds}")
 
             try:
-                # Set seeds
-                torch.manual_seed(seed)
-                np.random.seed(seed)
-                if torch.cuda.is_available():
-                    torch.cuda.manual_seed_all(seed)
+                # Set seeds (includes cudnn.deterministic + use_deterministic_algorithms)
+                set_seed(seed)
 
                 # Create model
                 model = get_tsa_model(dataset, config)
 
                 # Load checkpoint if provided
                 if load_checkpoint:
-                    ckpt = torch.load(load_checkpoint)
+                    ckpt = torch.load(load_checkpoint, weights_only=True)
                     model.load_state_dict(ckpt['model_state_dict'])
                     print(f"  Loaded checkpoint: {load_checkpoint}")
 
@@ -590,7 +589,7 @@ def run_hardware_validation(
         model = get_tsa_model(dataset, config)
 
         if pretrained_path.exists():
-            ckpt = torch.load(pretrained_path, map_location=device)
+            ckpt = torch.load(pretrained_path, map_location=device, weights_only=True)
             model.load_state_dict(ckpt)
             print(f"  Loaded: {pretrained_path}")
         else:

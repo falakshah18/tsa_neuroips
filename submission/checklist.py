@@ -24,7 +24,7 @@ class SubmissionChecker:
         """
         Run all checks
         """
-        print("🔍 Running pre-submission checks...\n")
+        print("[CHECK] Running pre-submission checks...\n")
         
         checks = [
             self.check_paper_formatting,
@@ -53,7 +53,7 @@ class SubmissionChecker:
     
     def check_paper_formatting(self):
         """Check LaTeX formatting"""
-        print("📄 Checking paper formatting...")
+        print("[PAPER] Checking paper formatting...")
         
         main_tex = self.paper_dir / 'main.tex'
         
@@ -84,11 +84,11 @@ class SubmissionChecker:
             if r'\end{theorem}' not in content:
                 self.issues.append("Unclosed theorem environment")
         
-        print("  ✓ Formatting check complete")
+        print("  OK Formatting check complete")
     
     def check_references(self):
         """Check bibliography"""
-        print("📚 Checking references...")
+        print("[REFS] Checking references...")
         
         bib_file = self.paper_dir / 'references.bib'
         
@@ -119,11 +119,11 @@ class SubmissionChecker:
         if 'MISSING' in bib_content or 'TODO' in bib_content:
             self.issues.append("Incomplete bibliography entries")
         
-        print(f"  ✓ Found {num_refs} references")
+        print(f"  OK Found {num_refs} references")
     
     def check_figures(self):
         """Check all figures"""
-        print("🖼️  Checking figures...")
+        print("[FIG]  Checking figures...")
         
         figures_dir = self.paper_dir / 'figures'
         
@@ -164,11 +164,11 @@ class SubmissionChecker:
                 if not fig_path.exists():
                     self.issues.append(f"Referenced figure not found: {fig_ref}")
         
-        print(f"  ✓ Found {len(pdf_figs)} PDF figures")
+        print(f"  OK Found {len(pdf_figs)} PDF figures")
     
     def check_tables(self):
         """Check tables"""
-        print("📊 Checking tables...")
+        print("[TABLE] Checking tables...")
         
         tables_dir = self.paper_dir / 'tables'
         
@@ -198,11 +198,11 @@ class SubmissionChecker:
             if 'tabular' in content and 'booktabs' not in content:
                 self.warnings.append(f"{table_file.name} should use booktabs package")
         
-        print(f"  ✓ Found {len(tex_tables)} table files")
+        print(f"  OK Found {len(tex_tables)} table files")
     
     def check_reproducibility(self):
         """Check reproducibility materials"""
-        print("🔄 Checking reproducibility...")
+        print("[REPRO] Checking reproducibility...")
         
         # Check for code repository
         if not Path('./README.md').exists():
@@ -222,11 +222,11 @@ class SubmissionChecker:
         if len(scripts) == 0:
             self.warnings.append("No experiment scripts found")
         
-        print("  ✓ Reproducibility check complete")
+        print("  OK Reproducibility check complete")
     
     def check_statistical_significance(self):
         """Check for statistical tests"""
-        print("📈 Checking statistical significance...")
+        print("[STAT] Checking statistical significance...")
         
         main_tex = self.paper_dir / 'main.tex'
         with open(main_tex) as f:
@@ -244,11 +244,11 @@ class SubmissionChecker:
         if 'seed' not in content.lower() and 'random' not in content.lower():
             self.issues.append("No mention of multiple random seeds")
         
-        print("  ✓ Statistical checks complete")
+        print("  OK Statistical checks complete")
     
     def check_code_release(self):
         """Check code release preparation"""
-        print("💻 Checking code release...")
+        print("[CODE] Checking code release...")
         
         # Check for .gitignore
         if not Path('./.gitignore').exists():
@@ -271,11 +271,11 @@ class SubmissionChecker:
                 if pattern in content:
                     self.warnings.append(f"Possible sensitive info in {py_file}")
         
-        print("  ✓ Code release check complete")
+        print("  OK Code release check complete")
     
     def check_anonymization(self):
         """Check for double-blind compliance"""
-        print("🔒 Checking anonymization (for double-blind venues)...")
+        print("[ANON] Checking anonymization (for double-blind venues)...")
         
         main_tex = self.paper_dir / 'main.tex'
         with open(main_tex) as f:
@@ -297,11 +297,11 @@ class SubmissionChecker:
         if 'our previous work' in content.lower() or 'we previously' in content.lower():
             self.warnings.append("Self-citations may reveal identity - use third person")
         
-        print("  ✓ Anonymization check complete")
+        print("  OK Anonymization check complete")
     
     def check_page_limit(self):
         """Check page count"""
-        print("📏 Checking page limit...")
+        print("[PAGE] Checking page limit...")
         
         # Compile LaTeX and check pages
         main_tex = self.paper_dir / 'main.tex'
@@ -325,7 +325,7 @@ class SubmissionChecker:
                         pdf = PyPDF2.PdfReader(f)
                         num_pages = len(pdf.pages)
                     
-                    print(f"  📄 Main paper: {num_pages} pages")
+                    print(f"  [PAPER] Main paper: {num_pages} pages")
                     
                     # NeurIPS/ICLR typically allow 8-9 pages + references
                     if num_pages > 9:
@@ -338,16 +338,16 @@ class SubmissionChecker:
         except Exception as e:
             self.warnings.append(f"Could not compile LaTeX: {e}")
         
-        print("  ✓ Page limit check complete")
+        print("  OK Page limit check complete")
     
     def check_supplementary(self):
         """Check supplementary material"""
-        print("📎 Checking supplementary material...")
+        print("[SUPP] Checking supplementary material...")
         
         supp_file = self.paper_dir / 'supplementary.pdf'
         
         if supp_file.exists():
-            print("  ✓ Supplementary material found")
+            print("  OK Supplementary material found")
         else:
             self.warnings.append("No supplementary material - consider adding proofs/extra results")
         
@@ -357,7 +357,7 @@ class SubmissionChecker:
             content = f.read()
         
         if r'\appendix' in content:
-            print("  ✓ Appendix section found")
+            print("  OK Appendix section found")
         else:
             self.warnings.append("No appendix - add detailed proofs/ablations")
     
@@ -368,23 +368,23 @@ class SubmissionChecker:
         print("="*60)
         
         if len(self.issues) == 0:
-            print("\n✅ NO CRITICAL ISSUES FOUND!")
+            print("\n[OK] NO CRITICAL ISSUES FOUND!")
         else:
-            print(f"\n❌ {len(self.issues)} CRITICAL ISSUES:")
+            print(f"\n[FAIL] {len(self.issues)} CRITICAL ISSUES:")
             for issue in self.issues:
-                print(f"  • {issue}")
+                print(f"  - {issue}")
         
         if len(self.warnings) > 0:
-            print(f"\n⚠️  {len(self.warnings)} WARNINGS:")
+            print(f"\n[WARN]  {len(self.warnings)} WARNINGS:")
             for warning in self.warnings:
-                print(f"  • {warning}")
+                print(f"  - {warning}")
         
         if len(self.issues) == 0 and len(self.warnings) == 0:
-            print("\n🎉 PAPER IS READY TO SUBMIT!")
+            print("\n[DONE] PAPER IS READY TO SUBMIT!")
         elif len(self.issues) == 0:
-            print("\n✅ Paper is submittable, but address warnings for best results")
+            print("\n[OK] Paper is submittable, but address warnings for best results")
         else:
-            print("\n❌ FIX CRITICAL ISSUES BEFORE SUBMITTING")
+            print("\n[FAIL] FIX CRITICAL ISSUES BEFORE SUBMITTING")
         
         print("="*60)
 

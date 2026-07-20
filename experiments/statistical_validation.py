@@ -14,6 +14,8 @@ import seaborn as sns
 from typing import Dict, List, Tuple
 import json
 
+from utils.reproducibility import set_seed
+
 class StatisticalValidator:
     """
     Complete statistical validation framework
@@ -44,14 +46,8 @@ class StatisticalValidator:
             print(f"Running Seed {seed+1}/{n_seeds}")
             print(f"{'='*60}")
             
-            # Set all random seeds
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            torch.cuda.manual_seed_all(seed)
-            
-            # For reproducibility
-            torch.backends.cudnn.deterministic = True
-            torch.backends.cudnn.benchmark = False
+            # Set all random seeds (includes cudnn.deterministic + use_deterministic_algorithms)
+            set_seed(seed)
             
             # Create fresh model
             model = model_fn()

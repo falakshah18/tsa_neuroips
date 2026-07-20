@@ -404,7 +404,7 @@ class AdvancedTrainer:
         Returns:
             The epoch index stored in the checkpoint (0 if absent).
         """
-        ckpt = torch.load(path, map_location=self.device)
+        ckpt = torch.load(path, map_location=self.device, weights_only=True)
         self.model.load_state_dict(ckpt['model_state_dict'])
         if 'optimizer_state_dict' in ckpt:
             self.optimizer.load_state_dict(ckpt['optimizer_state_dict'])

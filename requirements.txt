@@ -13,3 +13,4 @@ jupyter
 ipykernel
 pyyaml>=6.0
 scipy>=1.10.0
+pandas>=2.0.0

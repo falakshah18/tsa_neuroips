@@ -22,7 +22,7 @@ from torch.utils.data import DataLoader, random_split
 
 
 class TSAFixedDecay(LearnableTSA):
-    """TSA with fixed (non-learnable) decay — ablates learnable beta."""
+    """TSA with all neuron parameters frozen (tau, threshold, temperature)."""
     def __init__(self, dim, num_heads=8, **kwargs):
         super().__init__(dim, num_heads, **kwargs)
         self.attn_tau = nn.Parameter(torch.zeros(num_heads), requires_grad=False)

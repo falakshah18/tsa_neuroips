@@ -100,7 +100,7 @@ class SurrogateGradSNN(nn.Module):
         metrics = {
             'total_spikes': total_spikes,
             'avg_spike_rate': total_spikes / (self.T * out.shape[0]),
-            'avg_energy_uJ': total_spikes * 0.1e-12,  # Loihi 2: 0.1pJ per spike
+            'avg_energy_uJ': total_spikes * 0.1e-6,  # Loihi 2: 0.1pJ per spike → μJ
         }
 
         return out, metrics
@@ -172,7 +172,7 @@ class SurrogateGradSNN_SHD(nn.Module):
         metrics = {
             'total_spikes': total_spikes,
             'avg_spike_rate': total_spikes / (self.T * x.shape[1]),
-            'avg_energy_uJ': total_spikes * 0.1e-12,
+            'avg_energy_uJ': total_spikes * 0.1e-6,
         }
 
         return out, metrics
