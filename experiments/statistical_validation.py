@@ -323,7 +323,7 @@ class StatisticalValidator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"📊 Comparison plot saved to {save_path}")
+        print(f"Comparison plot saved to {save_path}")
     
     def generate_latex_table(
         self,
@@ -438,9 +438,9 @@ $^*$ indicates statistically significant improvement over baseline.}
               f"p = {comparison_stats['friedman_p_value']:.4f}")
         
         if comparison_stats['overall_significant']:
-            print("  ✅ Overall difference is statistically significant")
+            print("  Overall difference is statistically significant")
         else:
-            print("  ⚠️ No significant difference found")
+            print("  WARNING: No significant difference found")
         
         print(f"\n  Rankings:")
         for i, (method, score) in enumerate(comparison_stats['rankings'], 1):
@@ -449,7 +449,7 @@ $^*$ indicates statistically significant improvement over baseline.}
         # 3. Pairwise comparisons
         print("\n3. Pairwise Comparisons (with Bonferroni correction):")
         for comp in comparison_stats['pairwise_comparisons']:
-            sig_symbol = "✅" if comp['significant_bonferroni'] else "❌"
+            sig_symbol = "+" if comp['significant_bonferroni'] else "ns"
             print(f"  {comp['method_a']} vs {comp['method_b']}:")
             print(f"    Difference: {comp['mean_difference']:.4f}")
             print(f"    p-value: {comp['p_value_ttest']:.4f} {sig_symbol}")
@@ -485,6 +485,6 @@ $^*$ indicates statistically significant improvement over baseline.}
         with open(save_dir / 'statistical_report.json', 'w') as f:
             json.dump(report, f, indent=2)
         
-        print(f"\n📊 Complete statistical analysis saved to {save_dir}")
+        print(f"\nComplete statistical analysis saved to {save_dir}")
         
         return report

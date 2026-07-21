@@ -25,7 +25,7 @@ import torch
 from pathlib import Path
 
 # Add project root to path
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from experiments.baseline_comparison import BaselineComparison
 
@@ -114,7 +114,7 @@ def check_environment():
     Verify all dependencies are installed
     before starting long experiments.
     """
-    print("\n Checking environment...")
+    print("\nChecking environment...")
 
     checks = {
         'torch': 'import torch',
@@ -131,25 +131,25 @@ def check_environment():
     for pkg, import_str in checks.items():
         try:
             exec(import_str)
-            print(f"  ✅ {pkg}")
+            print(f"  OK {pkg}")
         except ImportError:
-            print(f"  ❌ {pkg} — install with: pip install {pkg}")
+            print(f"  MISSING {pkg} -- install with: pip install {pkg}")
             if pkg not in ['wandb']:  # wandb optional
                 all_ok = False
 
     # Check CUDA
     if torch.cuda.is_available():
-        print(f"  ✅ CUDA: {torch.cuda.get_device_name(0)}")
+        print(f"  OK CUDA: {torch.cuda.get_device_name(0)}")
         print(f"     VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
     else:
-        print("  ⚠️  CUDA not available — using CPU (slow)")
+        print("  WARNING: CUDA not available -- using CPU (slow)")
 
     if not all_ok:
-        print("\n❌ Missing dependencies. Run:")
+        print("\nMissing dependencies. Run:")
         print("   pip install -r requirements.txt")
         sys.exit(1)
 
-    print("  ✅ Environment OK\n")
+    print("  Environment OK\n")
 
 
 # ─────────────────────────────────────────────
@@ -275,7 +275,7 @@ def print_final_summary(results: dict):
         criteria = score_dict.get('criteria', {})
         total = score_dict.get('total_score', 0)
 
-        def yn(v): return "✅" if v else "❌"
+        def yn(v): return "Y" if v else "N"
 
         print(
             f"{algo:<25} "
@@ -301,7 +301,7 @@ def main():
     # come from whatever was explicitly passed via --datasets/--algorithms
     # (main.py already computes the right dataset list before calling in).
     if args.quick:
-        print(f"⚡ QUICK MODE: 1 seed, 5 epochs, datasets={args.datasets}")
+        print(f"QUICK MODE: 1 seed, 5 epochs, datasets={args.datasets}")
         args.n_seeds = 1
         args.epochs = 5
 
@@ -351,10 +351,10 @@ def main():
     with open(save_dir / 'final_summary.json', 'w') as f:
         json.dump(report, f, indent=2, default=str)
 
-    print(f"\n✅ All results saved to {args.save_dir}/")
-    print(f"   full_comparison.json — raw seed results")
-    print(f"   ugrp_report.json     — aggregated report")
-    print(f"   final_summary.json   — summary for paper")
+    print(f"\nAll results saved to {args.save_dir}/")
+    print(f"   full_comparison.json -- raw seed results")
+    print(f"   ugrp_report.json     -- aggregated report")
+    print(f"   final_summary.json   -- summary for paper")
 
 
 if __name__ == '__main__':

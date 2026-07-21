@@ -8,7 +8,7 @@ import pytest
 from pathlib import Path
 import sys
 
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from baselines.surrogate_gradient import get_surrogate_grad_model
 from baselines.stdp import get_stdp_model

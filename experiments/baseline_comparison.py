@@ -606,7 +606,7 @@ class BaselineComparison:
                         result['error'] = False
                         algo_results.append(result)
                     except Exception as e:
-                        print(f"  ⚠️  Seed {seed} failed: {e}")
+                        print(f"  WARNING: Seed {seed} failed: {e}")
                         algo_results.append({'seed': seed, 'error': str(e)})
 
                 self.results[dataset][algorithm] = algo_results
@@ -641,7 +641,7 @@ class BaselineComparison:
         with open(self.save_dir / 'full_comparison.json', 'w') as f:
             json.dump(self.results, f, indent=2)
 
-        print(f"\n✅ Results saved to {self.save_dir}/")
+        print(f"\nResults saved to {self.save_dir}/")
 
     def generate_report(self) -> Dict:
         """Generate aggregated report."""

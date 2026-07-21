@@ -34,7 +34,7 @@ from matplotlib.gridspec import GridSpec
 import matplotlib.patheffects as pe
 
 # Add project root to path
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 # ─────────────────────────────────────────────
@@ -138,7 +138,7 @@ def parse_args():
 def load_json(path: str) -> dict:
     p = Path(path)
     if not p.exists():
-        print(f"  ⚠️  Not found: {path} — using placeholder data")
+        print(f"  WARNING: Not found: {path} -- using placeholder data")
         return {}
     with open(p) as f:
         return json.load(f)
@@ -926,7 +926,7 @@ def main():
     plot_hardware_validation(hardware_results, output_dir)
 
     print("\n" + "=" * 60)
-    print("✅ ALL FIGURES GENERATED")
+    print("ALL FIGURES GENERATED")
     print("=" * 60)
     print(f"\nFiles in {output_dir}:")
     for f in sorted(output_dir.glob('*.pdf')):

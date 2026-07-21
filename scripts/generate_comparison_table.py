@@ -26,7 +26,7 @@ import numpy as np
 from pathlib import Path
 
 # Add project root to path
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 # ─────────────────────────────────────────────
@@ -84,7 +84,7 @@ def load_json(path: str) -> dict:
     """Load JSON file, return empty dict if not found."""
     p = Path(path)
     if not p.exists():
-        print(f"  ⚠️  Not found: {path}")
+        print(f"  WARNING: Not found: {path}")
         return {}
     with open(p) as f:
         return json.load(f)
@@ -564,7 +564,7 @@ def generate_ablation_table(
     print("\nGenerating Table 4: Ablation Results...")
 
     if not ablation_results:
-        print("  ⚠️  No ablation results found")
+        print("  WARNING: No ablation results found")
         # Generate placeholder table
         latex = r"""\begin{table}[t]
 \centering
@@ -704,7 +704,7 @@ def main():
 
     if not baseline_results and not tsa_results:
         print(
-            "\n⚠️  No results found. "
+            "\nWARNING: No results found. "
             "Run experiments first:\n"
             "  python scripts/run_baseline_comparison.py\n"
             "  python scripts/run_tsa_experiments.py"
@@ -735,7 +735,7 @@ def main():
     )
 
     print("\n" + "=" * 60)
-    print("✅ ALL TABLES GENERATED")
+    print("ALL TABLES GENERATED")
     print("=" * 60)
     print(f"\nFiles in {args.output_dir}:")
     for f in output_dir.glob('*.tex'):

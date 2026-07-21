@@ -379,24 +379,21 @@ def generate_outputs(args):
         all_results = json.load(f)
 
     print("Generating LaTeX tables...")
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'scripts'))
+    scripts_dir = str(Path(__file__).resolve().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
 
     try:
         from generate_comparison_table import (
             generate_algorithm_comparison,
             generate_bio_plausibility_table,
-            generate_main_results_table,
-            generate_ablation_table,
         )
         paper_tables = Path(__file__).resolve().parent.parent / 'paper' / 'tables'
         paper_tables.mkdir(parents=True, exist_ok=True)
 
         datasets = list(all_results.keys())
-        algorithms = [k for k in all_results.get(datasets[0], {}).keys()
-                      if k != 'bio_plausibility']
-
-        generate_algorithm_comparison(all_results, datasets, str(paper_tables))
-        generate_bio_plausibility_table(str(paper_tables))
+        generate_algorithm_comparison(all_results, datasets, paper_tables)
+        generate_bio_plausibility_table(paper_tables)
         print(f"  Tables saved to {paper_tables}")
     except Exception as e:
         print(f"  Table generation failed: {e}")
@@ -406,13 +403,13 @@ def generate_outputs(args):
         from generate_plots import (
             plot_algorithm_comparison,
             plot_energy_comparison,
-            plot_hardware_validation,
         )
         paper_figs = Path(__file__).resolve().parent.parent / 'paper' / 'figures'
         paper_figs.mkdir(parents=True, exist_ok=True)
 
-        plot_algorithm_comparison(all_results, str(paper_figs))
-        plot_energy_comparison(all_results, str(paper_figs))
+        datasets_list = list(all_results.keys())
+        plot_algorithm_comparison(all_results, datasets_list, paper_figs)
+        plot_energy_comparison(all_results, datasets_list, paper_figs)
         print(f"  Plots saved to {paper_figs}")
     except Exception as e:
         print(f"  Plot generation failed: {e}")

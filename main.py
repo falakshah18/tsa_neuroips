@@ -23,7 +23,7 @@ from pathlib import Path
 import torch
 
 # Add project root to path
-sys.path.append(str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
 
 def parse_args():
@@ -120,7 +120,7 @@ def main():
             datasets = ['nmnist']
         args.n_seeds = 1
         args.epochs = 5
-        print("\n⚡ QUICK MODE ENABLED")
+        print("\nQUICK MODE ENABLED")
 
     # Run baseline comparison
     if args.mode in ['baseline', 'all']:
@@ -190,7 +190,7 @@ def main():
         figure_main()
 
     print("\n" + "=" * 70)
-    print("✅ EXPERIMENTS COMPLETE")
+    print("EXPERIMENTS COMPLETE")
     print("=" * 70)
 
 

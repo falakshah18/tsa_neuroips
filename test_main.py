@@ -49,14 +49,14 @@ def run_import_tests():
         import scipy
         import sklearn
 
-        print("✅ All imports successful")
+        print("All imports successful")
         print(f"   torch: {torch.__version__}")
         print(f"   spikingjelly: {spikingjelly.__version__ if hasattr(spikingjelly, '__version__') else 'installed'}")
         print(f"   numpy: {np.__version__}")
 
         return 0
     except ImportError as e:
-        print(f"❌ Import error: {e}")
+        print(f"Import error: {e}")
         return 1
 
 def main():
@@ -64,17 +64,17 @@ def main():
     import_failed = run_import_tests()
 
     if import_failed:
-        print("\n❌ Import tests failed. Check requirements.")
+        print("\nImport tests failed. Check requirements.")
         return 1
 
     test_failed = run_tests()
 
     if test_failed:
-        print("\n❌ Unit tests failed.")
+        print("\nUnit tests failed.")
         return 1
 
     print("\n" + "=" * 70)
-    print("✅ ALL TESTS PASSED")
+    print("ALL TESTS PASSED")
     print("=" * 70)
     return 0
 

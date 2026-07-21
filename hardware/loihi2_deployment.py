@@ -6,6 +6,8 @@ This is GOLD for top-tier publications
 
 # Note: This requires Intel Loihi access through INRC
 # If you don't have access, use simulation (see next section)
+import time
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -228,7 +230,6 @@ def hardware_validation_report(
     # Compare to standard GPU execution
     print("\n Comparison with GPU:")
     # Measure GPU energy (approximate)
-    import time
     start = time.time()
     with torch.no_grad():
         for data, _ in dataloader:

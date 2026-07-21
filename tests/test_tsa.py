@@ -8,7 +8,7 @@ import pytest
 from pathlib import Path
 import sys
 
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from models.tst_v2 import (
     LearnableTSA,
@@ -89,3 +89,37 @@ class TestTSA:
 
         # Check that pos_embed is learnable
         assert model.pos_embed.requires_grad
+
+    def test_temperature_floor_prevents_nan(self):
+        """Temperature must never reach zero, or division-by-zero / NaN ensues."""
+        tsa = LearnableTSA(dim=64, num_heads=4)
+        # Force temperature to zero (worst case)
+        tsa.temperature.data.zero_()
+        x = torch.randn(5, 2, 16, 64)
+        output, metrics = tsa(x)
+        assert torch.isfinite(output).all(), "output contains NaN/Inf"
+        assert torch.isfinite(
+            torch.tensor(float(metrics['attention']['total_spikes']))
+        ), "spike count is NaN/Inf"
+
+    def test_energy_breakdown_nonnegative(self):
+        """Energy estimates must be non-negative and finite."""
+        model = TemporalSpikingTransformer(
+            img_size=34, patch_size=2, in_channels=2,
+            num_classes=10, embed_dim=64, depth=2, num_heads=4,
+        )
+        x = torch.randn(3, 2, 2, 34, 34)
+        energy = model.get_energy_breakdown(x)
+        assert energy['total_spikes'] >= 0
+        assert energy['total_energy_J'] >= 0
+        assert energy['energy_per_sample_uJ'] >= 0
+
+    def test_single_timestep(self):
+        """Model must handle T=1 (degenerate temporal input)."""
+        model = TemporalSpikingTransformer(
+            img_size=34, patch_size=2, in_channels=2,
+            num_classes=10, embed_dim=64, depth=2, num_heads=4,
+        )
+        x = torch.randn(1, 2, 2, 34, 34)
+        output, metrics = model(x)
+        assert output.shape == (2, 10)

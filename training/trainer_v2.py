@@ -134,7 +134,6 @@ class AdvancedTrainer:
         self.scheduler = self._build_scheduler()
 
         self.use_amp = bool(self.config['mixed_precision']) and self.device.startswith('cuda')
-        self.scaler = torch.amp.GradScaler('cuda', enabled=self.use_amp) if self.device.startswith('cuda') else None
 
         self.log_dir = Path(self.config['log_dir'])
         self.checkpoint_dir = Path(self.config['checkpoint_dir'])

@@ -6,19 +6,12 @@ This is what separates good papers from great ones
 
 from typing import Dict, List
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from models.tst_v2 import TemporalSpikingTransformer, LearnableTSA
 from training.trainer_v2 import AdvancedTrainer
-# ─────────────────────────────────────────────
-# Ablation attention variants
-# ─────────────────────────────────────────────
-
 import torch.nn as nn
 import torch.nn.functional as F
-from spikingjelly.activation_based import neuron, surrogate, layer, functional
-import tonic
-from tonic import datasets, transforms
-from torch.utils.data import DataLoader, random_split
+from spikingjelly.activation_based import layer, functional
 
 
 class TSAFixedDecay(LearnableTSA):
@@ -82,7 +75,6 @@ class NoAttention(nn.Module):
 
 def build_model_with_attention(attn_class, base_config: dict) -> nn.Module:
     """Build TemporalSpikingTransformer but patch its attention class."""
-    import copy
     from models.tst_v2 import TSABlock
 
     model = TemporalSpikingTransformer(**base_config)
@@ -313,7 +305,7 @@ class AblationFramework:
         Run complete ablation study
         This takes TIME but is ESSENTIAL
         """
-        print("\n🔬 Running comprehensive ablation studies...")
+        print("\nRunning comprehensive ablation studies...")
         
         self.ablate_depth()
         self.ablate_num_heads()
@@ -390,4 +382,4 @@ class AblationFramework:
         
         plt.savefig('ablation_attention.pdf', dpi=300, bbox_inches='tight')
         
-        print("📊 Ablation plots saved!")
+        print("Ablation plots saved!")

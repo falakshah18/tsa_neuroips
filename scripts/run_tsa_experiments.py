@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Dict, List
 
 # Add project root to path
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.reproducibility import set_seed
 
@@ -369,7 +369,7 @@ def run_training(
                 dataset, ds_config, quick=quick
             )
         except Exception as e:
-            print(f"  ⚠️  Could not load dataset '{dataset}': {e}")
+            print(f"  WARNING: Could not load dataset '{dataset}': {e}")
             all_results[dataset].append({'error': str(e)})
             continue
 
@@ -453,7 +453,7 @@ def run_training(
                     pretrained_path
                 )
             except Exception as e:
-                print(f"  ⚠️  Seed {seed} failed: {e}")
+                print(f"  WARNING: Seed {seed} failed: {e}")
                 all_results[dataset].append({'seed': seed, 'error': str(e)})
 
         # Print dataset summary
@@ -503,7 +503,7 @@ def run_ablations(
             'nmnist', ds_config, quick=quick
         )
     except Exception as e:
-        print(f"  ⚠️  Could not load dataset 'nmnist': {e}")
+        print(f"  WARNING: Could not load dataset 'nmnist': {e}")
         return {'error': str(e)}
 
     # Base config for ablations
@@ -576,7 +576,7 @@ def run_hardware_validation(
         try:
             _, _, test_loader = get_loaders(dataset, ds_config, quick=quick)
         except Exception as e:
-            print(f"  ⚠️  Could not load dataset '{dataset}': {e}")
+            print(f"  WARNING: Could not load dataset '{dataset}': {e}")
             hardware_results[dataset] = {'error': str(e)}
             continue
 
@@ -647,7 +647,7 @@ def run_statistical_validation(
     baseline_path = Path(baseline_results_path)
     if not baseline_path.exists():
         print(
-            "  ⚠️  Baseline results not found. "
+            "  WARNING: Baseline results not found. "
             "Run run_baseline_comparison.py first."
         )
         return {}
@@ -760,7 +760,7 @@ def main():
 
     # Quick mode
     if args.quick:
-        print("⚡ QUICK MODE: 1 seed, 5 epochs")
+        print("QUICK MODE: 1 seed, 5 epochs")
         args.n_seeds = 1
         args.epochs = 5
         args.ablation_epochs = 3
@@ -830,7 +830,7 @@ def main():
             save_dir=save_dir,
         )
 
-    print("\n✅ TSA experiments complete")
+    print("\nTSA experiments complete")
     print(f"   Results saved to {args.save_dir}/")
 
 
