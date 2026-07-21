@@ -104,7 +104,7 @@ class LearnableTSA(nn.Module):
         
         self.attn_tau = nn.Parameter(torch.ones(num_heads) * init_tau, requires_grad=learnable_tau)
         self.attn_threshold = nn.Parameter(torch.ones(num_heads) * init_threshold, requires_grad=learnable_threshold)
-        self.temperature = nn.Parameter(torch.ones(num_heads))
+        self.temperature = nn.Parameter(torch.ones(num_heads), requires_grad=True)
         
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = layer.Linear(dim, dim)
@@ -139,7 +139,7 @@ class LearnableTSA(nn.Module):
         _, B, H, N, C = q.shape
         beta = torch.sigmoid(self.attn_tau)
         theta = F.softplus(self.attn_threshold)
-        temp = F.softplus(self.temperature)
+        temp = F.softplus(self.temperature) + 1e-6
         
         attn_mem = torch.zeros(B, H, N, N, device=q.device)
         output = torch.zeros(T, B, N, H * C, device=q.device)

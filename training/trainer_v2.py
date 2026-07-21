@@ -134,7 +134,7 @@ class AdvancedTrainer:
         self.scheduler = self._build_scheduler()
 
         self.use_amp = bool(self.config['mixed_precision']) and self.device.startswith('cuda')
-        self.scaler = torch.amp.GradScaler('cuda', enabled=self.use_amp)
+        self.scaler = torch.amp.GradScaler('cuda', enabled=self.use_amp) if self.device.startswith('cuda') else None
 
         self.log_dir = Path(self.config['log_dir'])
         self.checkpoint_dir = Path(self.config['checkpoint_dir'])
@@ -144,12 +144,16 @@ class AdvancedTrainer:
         self.writer = SummaryWriter(log_dir=str(self.log_dir)) if _HAS_TENSORBOARD else None
 
         if self.use_wandb:
-            _wandb.init(
-                project=self.config.get('project_name', 'TSA_NEUROIPS'),
-                name=self.config.get('run_name', 'run'),
-                config=self.config,
-                reinit=True,
-            )
+            try:
+                _wandb.init(
+                    project=self.config.get('project_name', 'TSA_NEUROIPS'),
+                    name=self.config.get('run_name', 'run'),
+                    config=self.config,
+                    reinit=True,
+                )
+            except Exception:
+                print("[AdvancedTrainer] wandb.init failed; continuing without it.")
+                self.use_wandb = False
 
         self.best_val_acc = 0.0
         self.epochs_without_improvement = 0
@@ -217,10 +221,13 @@ class AdvancedTrainer:
 
         total = 0.0
         blocks = metrics.get('blocks')
-        if blocks:
+        if isinstance(blocks, list):
             for block in blocks:
-                attn = block.get('attention', {}) if isinstance(block, dict) else {}
-                total += float(attn.get('total_spikes', 0.0))
+                if not isinstance(block, dict):
+                    continue
+                attn = block.get('attention', {})
+                if isinstance(attn, dict):
+                    total += float(attn.get('total_spikes', 0.0))
             return total
 
         # Fallback: metrics might itself look like {'total_spikes': ...}
@@ -277,20 +284,20 @@ class AdvancedTrainer:
 
                 if spike_reg_weight:
                     total_spikes = self._count_spikes(metrics)
-                    # Normalize by batch size so the regularizer is scale-stable.
                     batch_size = y.size(0)
                     loss = loss + spike_reg_weight * (total_spikes / max(batch_size, 1))
 
                 loss = loss / accum_steps
 
-            self.scaler.scale(loss).backward()
+            if self.device.startswith('cuda'):
+                loss = loss.float()
+
+            loss.backward()
 
             if (step + 1) % accum_steps == 0:
                 if grad_clip:
-                    self.scaler.unscale_(self.optimizer)
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), grad_clip)
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
+                self.optimizer.step()
                 self.optimizer.zero_grad()
 
             functional.reset_net(self.model)
@@ -304,10 +311,8 @@ class AdvancedTrainer:
         # Flush any remaining accumulated gradients.
         if n_batches % accum_steps != 0:
             if grad_clip:
-                self.scaler.unscale_(self.optimizer)
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), grad_clip)
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
+            self.optimizer.step()
             self.optimizer.zero_grad()
 
         return total_loss / max(n_batches, 1)
@@ -343,6 +348,9 @@ class AdvancedTrainer:
             with torch.amp.autocast('cuda', enabled=self.use_amp):
                 logits, metrics = self.model(x)
                 loss = self.criterion(logits, y)
+
+            if self.device.startswith('cuda'):
+                loss = loss.float()
 
             total_loss += loss.item()
             preds = logits.argmax(dim=-1)
@@ -507,7 +515,10 @@ class AdvancedTrainer:
         if self.writer is not None:
             self.writer.close()
         if self.use_wandb:
-            _wandb.finish()
+            try:
+                _wandb.finish()
+            except Exception:
+                pass
 
         return {
             'best_val_acc': self.best_val_acc,
